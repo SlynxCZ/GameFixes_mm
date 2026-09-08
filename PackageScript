@@ -1,0 +1,143 @@
+# vim: set ts=2 sw=2 tw=99 noet ft=python:
+import os
+import glob
+
+builder.SetBuildFolder('package')
+
+
+class SDKPackage:
+
+  def __init__(self, cxx, sdk_name):
+
+    self.sdk_name = sdk_name
+
+    self.plugin_folder_path = os.path.join(
+      self.sdk_name,
+      'addons',
+      MMSPlugin.plugin_name
+    )
+
+    self.plugin_folder = builder.AddFolder(self.plugin_folder_path)
+
+    self.metamod_path = os.path.join(
+      self.sdk_name,
+      'addons',
+      'metamod'
+    )
+
+    self.metamod = builder.AddFolder(self.metamod_path)
+
+    self.addBinFolder(cxx)
+    self.generateVDF()
+
+
+  def addBinFolder(self, cxx):
+
+    platform64_path_map = {
+      'windows': 'win64',
+      'linux': 'linuxsteamrt64',
+      'mac': 'osx64'
+    }
+
+    if cxx.target.arch == 'x86_64':
+      self.bin_path = os.path.join(
+        self.plugin_folder_path,
+        'bin',
+        platform64_path_map[cxx.target.platform]
+      )
+    else:
+      self.bin_path = os.path.join(
+        self.plugin_folder_path,
+        'bin'
+      )
+
+    self.bin = builder.AddFolder(self.bin_path)
+
+
+  def generateVDF(self):
+
+    vdf = '"Metamod Plugin"\n'
+    vdf += '{\n'
+    vdf += f'\t"alias"\t"{MMSPlugin.plugin_alias}"\n'
+    vdf += f'\t"file"\t"{os.path.join(os.path.relpath(self.bin_path, self.sdk_name), MMSPlugin.plugin_name)}"\n'
+    vdf += '}'
+
+    builder.AddOutputFile(
+      os.path.join(
+        self.metamod_path,
+        f'{MMSPlugin.plugin_name}.vdf'
+      ),
+      vdf.encode('utf8')
+    )
+
+
+  def addBinary(self, binary):
+
+    (_, name) = os.path.split(binary.path)
+    ext = os.path.splitext(name)[1]
+
+    builder.AddCopy(
+      binary,
+      os.path.join(
+        self.bin_path,
+        MMSPlugin.plugin_name + ext
+      )
+    )
+
+
+  def addFolder(self, folder_path, result_path=None):
+
+    if not os.path.isabs(folder_path):
+      folder_path = os.path.join(builder.sourcePath, folder_path)
+
+    if result_path is None:
+      result_path = self.sdk_name
+    else:
+      result_path = os.path.join(self.sdk_name, result_path)
+
+    for root, _, files in os.walk(folder_path):
+      for f in files:
+
+        src = os.path.join(root, f)
+
+        rel = os.path.relpath(src, folder_path)
+
+        dst = os.path.join(result_path, rel)
+
+        builder.AddFolder(os.path.dirname(dst))
+        builder.AddCopy(src, dst)
+
+
+packages = {}
+
+for sdk_target in MMSPlugin.sdk_targets:
+
+  sdk = sdk_target.sdk
+  cxx = sdk_target.cxx
+
+  packages[sdk['name']] = SDKPackage(
+    cxx,
+    sdk['name']
+  )
+
+
+pdb_list = []
+
+sdk_name = list(packages.keys())[0]
+
+for task in MMSPlugin.binaries:
+
+  packages[sdk_name].addBinary(task.binary)
+
+  if task.debug:
+    pdb_list.append(task.debug)
+
+
+
+with open(
+  os.path.join(builder.buildPath, 'pdblog.txt'),
+  'wt'
+) as fp:
+
+  for line in pdb_list:
+    fp.write(line.path + '\n')

@@ -1,0 +1,4 @@
+[submodule "vendor/dynlibutils"]
+	path = vendor/dynlibutils
+	url = https://github.com/SlynxCZ/DynLibUtils.git
+	branch = main

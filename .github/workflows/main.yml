@@ -1,0 +1,150 @@
+name: Continuous Integration
+
+on:
+  push:
+    tags:
+      - '*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+
+  build-linux:
+    name: Build on Linux (clang-18)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build plugin inside container
+        run: docker compose -f docker/docker-compose.yml up --build --abort-on-container-exit
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GameFixes_mm_linux
+          path: build/package/cs2
+
+
+  build-windows:
+    name: Build on Windows (MSVC)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Prepare SDK directory
+        shell: powershell
+        run: |
+
+          $SDK = "C:\sdk"
+          $HL2SDK = "$SDK\hl2sdk-cs2"
+          $MMS = "$SDK\metamod-source"
+          $PROTO = "$SDK\Protobufs"
+
+          if (Test-Path $SDK) { Remove-Item $SDK -Recurse -Force }
+          New-Item -ItemType Directory -Path $SDK | Out-Null
+
+          git clone --recursive --branch cs2 --single-branch https://github.com/alliedmodders/hl2sdk $HL2SDK
+          git clone --recursive --branch master --single-branch https://github.com/alliedmodders/metamod-source $MMS
+          git clone --recursive https://github.com/SteamDatabase/Protobufs $PROTO
+
+          $HL2SDK_UNIX = $HL2SDK.Replace("\", "/")
+          $MMS_UNIX    = $MMS.Replace("\", "/")
+          $PROTO_UNIX  = "$($PROTO.Replace('\','/'))/csgo"
+
+          echo "HL2SDKCS2=$HL2SDK_UNIX"  >> $env:GITHUB_ENV
+          echo "MMSOURCE_DEV=$MMS_UNIX"  >> $env:GITHUB_ENV
+          echo "CSGO_PROTO=$PROTO_UNIX"  >> $env:GITHUB_ENV
+
+      - name: Checkout AMBuild
+        uses: actions/checkout@v4
+        with:
+          repository: SlynxCZ/ambuild
+          path: ambuild
+
+      - name: Install AMBuild
+        shell: powershell
+        run: |
+          pip install setuptools wheel
+          cd ambuild
+          python setup.py install
+
+      - name: Configure + Build (AMBuild)
+        shell: cmd
+        run: |
+
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+
+          mkdir build
+          cd build
+
+          python ../configure.py ^
+            --enable-optimize ^
+            --sdks cs2 ^
+            --mms_path=%MMSOURCE_DEV% ^
+            --hl2sdk-root=%HL2SDKCS2% ^
+            --hl2sdk-manifests=%MMSOURCE_DEV%/hl2sdk-manifests
+
+          ambuild
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GameFixes_mm_windows
+          path: build/package/cs2
+
+
+  release:
+    name: Release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [
+      build-linux,
+      build-windows
+    ]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: GameFixes_mm_linux
+          path: ./artifacts/linux
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: GameFixes_mm_windows
+          path: ./artifacts/windows
+
+      - name: Create archives
+        run: |
+          version="${GITHUB_REF#refs/tags/}"
+
+          tar -czf GameFixes_mm_${version}-linux.tar.gz \
+            -C artifacts/linux .
+
+          tar -czf GameFixes_mm_${version}-windows.tar.gz \
+            -C artifacts/windows .
+
+
+      - name: Upload release archives
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: GameFixes_mm_*.tar.gz
+          tag: ${{ github.ref }}
+          file_glob: true
+          overwrite: true
+          release_name: "${{ github.ref_name }}"

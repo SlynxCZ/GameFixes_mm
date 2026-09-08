@@ -1,0 +1,89 @@
+# vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
+import os
+
+CSGO_PROTO_DIR = os.environ.get('CSGO_PROTO')
+
+# Here only one sdk should be available to generate only one executable in the end,
+# as multi-sdk loading isn't supported out of the box by metamod, and would require specifying the full path in the vdf
+# which in the end would ruin the multi-platform (unix, win etc) loading by metamod as it won't be able to append platform specific extension
+# so just fall back to the single binary.
+# Multi-sdk solutions should be manually loaded with a custom plugin loader (examples being sourcemod, stripper:source)
+for sdk_target in MMSPlugin.sdk_targets:
+  sdk = sdk_target.sdk
+  cxx = sdk_target.cxx
+
+  binary = MMSPlugin.HL2Library(builder, cxx, MMSPlugin.plugin_name, sdk)
+
+  binary.sources += [
+    os.path.join('src', 'plugin.cpp'),
+    os.path.join('src', 'scheduler.cpp'),
+    os.path.join('src', 'fixes', 'fix.cpp'),
+    os.path.join('src', 'fixes', 'beam_crash.cpp'),
+    os.path.join('src', 'fixes', 'demo_record.cpp'),
+    os.path.join('src', 'fixes', 'hammer_id.cpp'),
+    os.path.join('src', 'fixes', 'input_activator_crash.cpp'),
+    os.path.join('src', 'fixes', 'server_list_players.cpp'),
+    os.path.join('src', 'fixes', 'slow_animation.cpp'),
+    os.path.join('src', 'fixes', 'steam_ban.cpp'),
+    os.path.join('src', 'fixes', 'sv_cheats.cpp'),
+    os.path.join('src', 'fixes', 'team_limit.cpp'),
+    os.path.join('src', 'fixes', 'workshop_voice.cpp'),
+    os.path.join('src', 'sdk', 'schemasystem_helper.cpp'),
+  ]
+
+  binary.compiler.linkflags += [
+    MMSPlugin.dynlibutils_lib[cxx.target.arch],
+  ]
+
+  binary.compiler.cxxincludes += [
+    os.path.join(builder.sourcePath, 'src'),
+    os.path.join(builder.sourcePath, 'src', 'sdk'),
+    os.path.join(builder.sourcePath, 'vendor'),
+    os.path.join(builder.sourcePath, 'vendor', 'dynlibutils', 'include'),
+    os.path.join(builder.sourcePath, 'vendor', 'dynlibutils', 'include', 'dynlibutils')
+  ]
+
+  sha = os.environ.get("GITHUB_SHA_SHORT", "Local")
+  semver = os.environ.get("SEMVER", "Local")
+
+  binary.compiler.defines += [
+    f'GITHUB_SHA="{sha}"',
+    f'SEMVER="{semver}"',
+  ]
+
+  # server_list_players talks to the Steam game server API.
+  if binary.compiler.target.platform == 'linux':
+    binary.compiler.postlink += [os.path.join(sdk['path'], 'lib', 'linux64', 'libsteam_api.so')]
+  elif binary.compiler.target.platform == 'windows':
+    binary.compiler.postlink += [os.path.join(sdk['path'], 'lib', 'public', 'win64', 'steam_api64.lib')]
+
+  # Export only CreateInterface
+  if binary.compiler.target.platform == 'linux':
+    binary.compiler.linkflags += ['-Wl,--version-script=' + os.path.join(builder.currentSourcePath, 'ExportMap')]
+
+  binary.custom = [builder.tools.Protoc(protoc = sdk_target.protoc, sources = [
+    os.path.join(CSGO_PROTO_DIR, 'network_connection.proto'),
+    os.path.join(CSGO_PROTO_DIR, 'networkbasetypes.proto'),
+    os.path.join(CSGO_PROTO_DIR, 'networksystem_protomessages.proto'),
+    os.path.join(CSGO_PROTO_DIR, 'cs_gameevents.proto'),
+    os.path.join(CSGO_PROTO_DIR, 'cs_usercmd.proto'),
+    os.path.join(CSGO_PROTO_DIR, 'base_gcmessages.proto'),
+    os.path.join(CSGO_PROTO_DIR, 'econ_gcmessages.proto'),
+    os.path.join(CSGO_PROTO_DIR, 'engine_gcmessages.proto'),
+    os.path.join(CSGO_PROTO_DIR, 'gcsdk_gcmessages.proto'),
+    os.path.join(CSGO_PROTO_DIR, 'gcsystemmsgs.proto'),
+    os.path.join(CSGO_PROTO_DIR, 'cstrike15_gcmessages.proto'),
+    os.path.join(CSGO_PROTO_DIR, 'cstrike15_usermessages.proto'),
+    os.path.join(CSGO_PROTO_DIR, 'source2_steam_stats.proto'),
+    os.path.join(CSGO_PROTO_DIR, 'netmessages.proto'),
+    os.path.join(CSGO_PROTO_DIR, 'steammessages.proto'),
+    os.path.join(CSGO_PROTO_DIR, 'usercmd.proto'),
+    os.path.join(CSGO_PROTO_DIR, 'usermessages.proto'),
+    os.path.join(CSGO_PROTO_DIR, 'gameevents.proto'),
+    os.path.join(CSGO_PROTO_DIR, 'clientmessages.proto'),
+    os.path.join(CSGO_PROTO_DIR, 'te.proto'),
+    os.path.join(CSGO_PROTO_DIR, 'valveextensions.proto'),
+  ])]
+
+  nodes = builder.Add(binary)
+  MMSPlugin.binaries += [nodes]

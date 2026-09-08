@@ -1,0 +1,5 @@
+"Metamod Plugin"
+{
+	"alias"	"game_fixes"
+	"file"	"addons/game_fixes/bin/${PROJECT_VDF_PLATFORM}/game_fixes"
+}
