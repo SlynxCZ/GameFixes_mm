@@ -2,6 +2,10 @@ FROM registry.gitlab.steamos.cloud/steamrt/sniper/sdk:latest
 
 WORKDIR /app
 
+# The sniper image is Debian bullseye, whose security repo Release files have
+# expired since bullseye went EOL; without this every apt update fails.
+RUN echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99-no-check-valid-until
+
 RUN echo "deb http://apt.llvm.org/bullseye/ llvm-toolchain-bullseye-18 main" >> /etc/apt/sources.list.d/llvm.list
 RUN echo "deb-src http://apt.llvm.org/bullseye/ llvm-toolchain-bullseye-18 main" >> /etc/apt/sources.list.d/llvm.list
 RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -

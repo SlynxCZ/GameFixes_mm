@@ -36,7 +36,8 @@
 using namespace DynLibUtils;
 
 CWorkshopVoiceFix::CWorkshopVoiceFix() :
-    m_hSendNetMessage(new KHook::Virtual(&CServerSideClientBase::SendNetMessage, this, &CWorkshopVoiceFix::CServerSideClient_SendNetMessage, nullptr))
+    // Spelled out: MSVC fails to deduce these from the member function pointer (clang manages).
+    m_hSendNetMessage(new KHook::Virtual<CServerSideClientBase, bool, const CNetMessage*, NetChannelBufType_t>(&CServerSideClientBase::SendNetMessage, this, &CWorkshopVoiceFix::CServerSideClient_SendNetMessage, nullptr))
 {
 }
 
