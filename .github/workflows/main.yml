@@ -1,7 +1,19 @@
 name: Continuous Integration
 
+# Three ways in:
+#
+#   * push a tag (v1.0.4, ...) -- builds and releases that tag, as before;
+#   * change pushbuild.txt on main -- the version job below picks the next
+#     tag (highest v* tag, last number plus one), the builds run against it
+#     and the release job creates it once they pass;
+#   * run it by hand (workflow_dispatch) -- builds as a check, releases nothing.
+#
+# Pushes to main that leave pushbuild.txt alone stop at the version job,
+# which is a few seconds. Everything after it is gated on its outputs.
 on:
   push:
+    branches:
+      - main
     tags:
       - '*'
   workflow_dispatch:
@@ -11,9 +23,82 @@ permissions:
 
 jobs:
 
+  version:
+    name: Version
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+      build: ${{ steps.resolve.outputs.build }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Decide what this run is
+        id: resolve
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+
+          # A tag push releases exactly that tag.
+          case "$GITHUB_REF" in
+            refs/tags/*)
+              echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+              echo "build=true" >> "$GITHUB_OUTPUT"
+              echo "Releasing pushed tag ${GITHUB_REF#refs/tags/}."
+              exit 0
+              ;;
+          esac
+
+          # A manual run is a build check: no tag, no release.
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "build=true" >> "$GITHUB_OUTPUT"
+            echo "Manual run -- building without a release."
+            exit 0
+          fi
+
+          # Otherwise only a change to pushbuild.txt cuts a release (a change,
+          # not the commit that adds the file). A first push to the branch, or
+          # one whose old head is gone after a force push, has nothing to diff
+          # against -- fall back to the tip commit's own file list.
+          if [ -n "${BEFORE:-}" ] && git rev-parse -q --verify "$BEFORE^{commit}" >/dev/null; then
+            changed="$(git diff --name-only --diff-filter=M "$BEFORE" "$GITHUB_SHA")"
+          else
+            changed="$(git show --pretty= --name-only --diff-filter=M "$GITHUB_SHA")"
+          fi
+
+          if ! printf '%s\n' "$changed" | grep -qx 'pushbuild.txt'; then
+            echo "pushbuild.txt untouched -- nothing to build."
+            exit 0
+          fi
+
+          # Highest v* tag with its last number plus one; v1.0.0 when there is none.
+          latest="$(git tag --list 'v*' --sort=-v:refname | head -n1)"
+          if [ -z "$latest" ]; then
+            next="v1.0.0"
+          else
+            next="${latest%.*}.$(( ${latest##*.} + 1 ))"
+          fi
+
+          # Paranoia: never reuse a tag, however the series was edited by hand.
+          while git rev-parse -q --verify "refs/tags/$next" >/dev/null; do
+            next="${next%.*}.$(( ${next##*.} + 1 ))"
+          done
+
+          echo "tag=$next" >> "$GITHUB_OUTPUT"
+          echo "build=true" >> "$GITHUB_OUTPUT"
+          echo "Building $next; the release job creates the tag once the builds pass."
+
+
   build-linux:
     name: Build on Linux (clang-18)
     runs-on: ubuntu-latest
+    needs: version
+    if: needs.version.outputs.build == 'true'
 
     steps:
       - name: Checkout repository
@@ -25,6 +110,8 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build plugin inside container
+        env:
+          SEMVER: ${{ needs.version.outputs.tag }}
         run: docker compose -f docker/docker-compose.yml up --build --abort-on-container-exit
 
       - name: Upload Linux artifact
@@ -37,6 +124,8 @@ jobs:
   build-windows:
     name: Build on Windows (MSVC)
     runs-on: windows-latest
+    needs: version
+    if: needs.version.outputs.build == 'true'
 
     steps:
       - name: Checkout repository
@@ -108,14 +197,32 @@ jobs:
 
   release:
     name: Release
-    if: startsWith(github.ref, 'refs/tags/')
+    if: needs.version.outputs.tag != ''
     needs: [
+      version,
       build-linux,
       build-windows
     ]
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create the tag
+        # Only on the pushbuild.txt path -- a tag push already has one. After the
+        # builds on purpose: a failed build leaves no tag behind. No CI loop either:
+        # GitHub does not start workflow runs from events an Actions token created.
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        env:
+          TAG: ${{ needs.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "$TAG"
+          git push origin "refs/tags/$TAG"
+
       - name: Download Linux artifact
         uses: actions/download-artifact@v4
         with:
@@ -129,8 +236,10 @@ jobs:
           path: ./artifacts/windows
 
       - name: Create archives
+        env:
+          VERSION: ${{ needs.version.outputs.tag }}
         run: |
-          version="${GITHUB_REF#refs/tags/}"
+          version="$VERSION"
 
           tar -czf GameFixes_mm_${version}-linux.tar.gz \
             -C artifacts/linux .
@@ -144,7 +253,7 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: GameFixes_mm_*.tar.gz
-          tag: ${{ github.ref }}
+          tag: ${{ needs.version.outputs.tag }}
           file_glob: true
           overwrite: true
-          release_name: "${{ github.ref_name }}"
+          release_name: "${{ needs.version.outputs.tag }}"

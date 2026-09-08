@@ -6,3 +6,7 @@ services:
       dockerfile: docker/Dockerfile
     volumes:
       - ..:/app/source
+    environment:
+      # The CI's version job resolved the tag; on the pushbuild.txt path it is
+      # not on HEAD yet, so git describe inside the container cannot see it.
+      SEMVER: ${SEMVER:-}
