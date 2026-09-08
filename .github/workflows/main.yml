@@ -43,6 +43,9 @@ jobs:
           BEFORE: ${{ github.event.before }}
         run: |
           set -euo pipefail
+          # Self-hosted runners check the workspace out as a different user than the
+          # one running this step, and git refuses to touch such a repository.
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
           # A tag push releases exactly that tag.
           case "$GITHUB_REF" in
@@ -218,6 +221,9 @@ jobs:
           TAG: ${{ needs.version.outputs.tag }}
         run: |
           set -euo pipefail
+          # Self-hosted runners check the workspace out as a different user than the
+          # one running this step, and git refuses to touch such a repository.
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag -a "$TAG" -m "$TAG"
