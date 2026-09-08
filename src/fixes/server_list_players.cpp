@@ -25,6 +25,7 @@
 
 #include "server_list_players.h"
 #include "scheduler.h"
+#include "utils.hpp"
 
 #include "sdk/CBasePlayerController.h"
 
@@ -34,8 +35,8 @@
 #include <tier1/KeyValues.h>
 
 CServerListPlayersFix::CServerListPlayersFix() :
-    m_hSteamAPIActivated(new KHook::Virtual(&ISource2Server::GameServerSteamAPIActivated, this, nullptr, &CServerListPlayersFix::CSource2Server_GameServerSteamAPIActivated)),
-    m_hSteamAPIDeactivated(new KHook::Virtual(&ISource2Server::GameServerSteamAPIDeactivated, this, nullptr, &CServerListPlayersFix::CSource2Server_GameServerSteamAPIDeactivated))
+    KHOOK_NEW(m_hSteamAPIActivated, &ISource2Server::GameServerSteamAPIActivated, this, nullptr, &CServerListPlayersFix::CSource2Server_GameServerSteamAPIActivated),
+    KHOOK_NEW(m_hSteamAPIDeactivated, &ISource2Server::GameServerSteamAPIDeactivated, this, nullptr, &CServerListPlayersFix::CSource2Server_GameServerSteamAPIDeactivated)
 {
 }
 

@@ -33,8 +33,8 @@
 using namespace DynLibUtils;
 
 CBeamCrashFix::CBeamCrashFix() :
-    m_hSetBeamOrigin(new KHook::Member(this, &CBeamCrashFix::CBeam_SetBeamOrigin, &CBeamCrashFix::CBeam_SetBeamOriginPost)),
-    m_hSetBeamEndPos(new KHook::Member(this, &CBeamCrashFix::CBeam_SetBeamEndPos, &CBeamCrashFix::CBeam_SetBeamEndPosPost))
+    KHOOK_NEW(m_hSetBeamOrigin, this, &CBeamCrashFix::CBeam_SetBeamOrigin, &CBeamCrashFix::CBeam_SetBeamOriginPost),
+    KHOOK_NEW(m_hSetBeamEndPos, this, &CBeamCrashFix::CBeam_SetBeamEndPos, &CBeamCrashFix::CBeam_SetBeamEndPosPost)
 {
 }
 

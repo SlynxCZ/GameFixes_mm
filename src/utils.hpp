@@ -34,6 +34,7 @@
 
 #include <cstddef>
 #include <cstring>
+#include <type_traits>
 
 #ifdef _WIN32
 #define WIN_LINUX(win, linux) win
@@ -75,4 +76,9 @@ inline T* AsHookTarget(DynLibUtils::VirtualTable& vtable)
     return reinterpret_cast<T*>(&vtable);
 }
 
-
+// Mem-initializer for a hook held through a plain pointer: the hook's type is
+// already spelled out on the member's declaration, so it is taken from there
+// instead of being repeated -- or deduced, which MSVC fails at for KHook's
+// manual-index and some member-function-pointer constructors.
+//   CFoo::CFoo() : KHOOK_NEW(m_hThink, 52u, this, &CFoo::Pre, &CFoo::Post) {}
+#define KHOOK_NEW(member, ...) member(new std::remove_pointer_t<decltype(member)>(__VA_ARGS__))

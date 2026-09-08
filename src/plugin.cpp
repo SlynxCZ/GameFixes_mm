@@ -61,9 +61,9 @@ PLUGIN_EXPOSE(Plugin, g_Plugin);
 
 Plugin::Plugin() :
     // GameFrame Post: the fixes only read the frame. StartupServer Pre: demo_record edits the session's maxplayers before the engine reads it.
-    m_hGameFrame(new KHook::Virtual(&ISource2Server::GameFrame, this, nullptr, &Plugin::CSource2Server_GameFrame)),
-    m_hStartupServer(new KHook::Virtual(&INetworkServerService::StartupServer, this, &Plugin::INetworkServerService_StartupServer, nullptr)),
-    m_hLoadEventsFromFile(new KHook::Virtual(&IGameEventManager2::LoadEventsFromFile, this, nullptr, &Plugin::CGameEventManager_LoadEventsFromFile))
+    KHOOK_NEW(m_hGameFrame, &ISource2Server::GameFrame, this, nullptr, &Plugin::CSource2Server_GameFrame),
+    KHOOK_NEW(m_hStartupServer, &INetworkServerService::StartupServer, this, &Plugin::INetworkServerService_StartupServer, nullptr),
+    KHOOK_NEW(m_hLoadEventsFromFile, &IGameEventManager2::LoadEventsFromFile, this, nullptr, &Plugin::CGameEventManager_LoadEventsFromFile)
 {
 }
 

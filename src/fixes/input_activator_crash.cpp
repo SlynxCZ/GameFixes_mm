@@ -33,7 +33,7 @@
 using namespace DynLibUtils;
 
 CInputActivatorCrashFix::CInputActivatorCrashFix() :
-    m_hInputTestActivator(new KHook::Member(this, &CInputActivatorCrashFix::CBaseFilter_InputTestActivator, nullptr))
+    KHOOK_NEW(m_hInputTestActivator, this, &CInputActivatorCrashFix::CBaseFilter_InputTestActivator, nullptr)
 {
 }
 

@@ -25,6 +25,8 @@
 
 #include "steam_ban.h"
 
+#include "utils.hpp"
+
 #include "dynlibutils/module.hpp"
 
 #include <steam/steamclientpublic.h>
@@ -37,7 +39,7 @@
 using namespace DynLibUtils;
 
 CSteamBanFix::CSteamBanFix() :
-    m_hThink(new KHook::Virtual(WIN_LINUX(51u, 52u), this, &CSteamBanFix::CCSGameRules_Think, &CSteamBanFix::CCSGameRules_ThinkPost))
+    KHOOK_NEW(m_hThink, WIN_LINUX(51u, 52u), this, &CSteamBanFix::CCSGameRules_Think, &CSteamBanFix::CCSGameRules_ThinkPost)
 {
 }
 

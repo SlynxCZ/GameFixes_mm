@@ -25,6 +25,8 @@
 
 #include "workshop_voice.h"
 
+#include "utils.hpp"
+
 #include "dynlibutils/module.hpp"
 
 #include <networksystem/inetworkserializer.h>
@@ -36,8 +38,7 @@
 using namespace DynLibUtils;
 
 CWorkshopVoiceFix::CWorkshopVoiceFix() :
-    // Spelled out: MSVC fails to deduce these from the member function pointer (clang manages).
-    m_hSendNetMessage(new KHook::Virtual<CServerSideClientBase, bool, const CNetMessage*, NetChannelBufType_t>(&CServerSideClientBase::SendNetMessage, this, &CWorkshopVoiceFix::CServerSideClient_SendNetMessage, nullptr))
+    KHOOK_NEW(m_hSendNetMessage, &CServerSideClientBase::SendNetMessage, this, &CWorkshopVoiceFix::CServerSideClient_SendNetMessage, nullptr)
 {
 }
 

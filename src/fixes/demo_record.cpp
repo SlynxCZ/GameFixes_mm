@@ -27,6 +27,8 @@
 
 #include "sdk/GameSessionConfiguration.h"
 
+#include "utils.hpp"
+
 #include "dynlibutils/module.hpp"
 
 #include <cstdio>
@@ -34,7 +36,7 @@
 using namespace DynLibUtils;
 
 CDemoRecordFix::CDemoRecordFix() :
-    m_hDisconnect(new KHook::Virtual(&CServerSideClientBase::Disconnect, this, &CDemoRecordFix::CServerSideClient_Disconnect, nullptr))
+    KHOOK_NEW(m_hDisconnect, &CServerSideClientBase::Disconnect, this, &CDemoRecordFix::CServerSideClient_Disconnect, nullptr)
 {
 }
 
