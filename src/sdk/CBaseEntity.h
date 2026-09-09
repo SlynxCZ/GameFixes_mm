@@ -11,8 +11,10 @@
 #endif
 
 #include "schemasystem_helper.h"
+#include "CCollisionProperty.h"
 
 #include <const.h>
+#include <entityhandle.h>
 #include <entityinstance.h>
 #include <mathlib/vector.h>
 
@@ -36,6 +38,11 @@ public:
     SCHEMA_FIELD(uint32_t, CBaseEntity, m_fFlags);
     SCHEMA_FIELD(MoveType_t, CBaseEntity, m_MoveType);
     SCHEMA_FIELD(MoveType_t, CBaseEntity, m_nActualMoveType);
+    SCHEMA_FIELD(Vector, CBaseEntity, m_vecAbsVelocity);
+    SCHEMA_FIELD(CCollisionProperty*, CBaseEntity, m_pCollision);
+    SCHEMA_FIELD(CCollisionProperty, CBaseEntity, m_Collision);
+    SCHEMA_FIELD(CEntityHandle, CBaseEntity, m_hOwnerEntity);
+    SCHEMA_FIELD(CEntityHandle, CBaseEntity, m_hGroundEntity);
 };
 
 #endif // CBASEENTITY_H

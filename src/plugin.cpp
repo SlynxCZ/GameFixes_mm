@@ -32,6 +32,8 @@
 #include "fixes/demo_record.h"
 #include "fixes/hammer_id.h"
 #include "fixes/input_activator_crash.h"
+#include "fixes/rampbug.h"
+#include "fixes/water_jump.h"
 #include "fixes/server_list_players.h"
 #include "fixes/slow_animation.h"
 #include "fixes/steam_ban.h"
@@ -171,6 +173,8 @@ std::vector<std::unique_ptr<CFix>> Plugin::CreateFixes()
     fixes.push_back(std::make_unique<CInputActivatorCrashFix>());
     fixes.push_back(std::make_unique<CSvCheatsFix>());
     fixes.push_back(std::make_unique<CServerListPlayersFix>());
+    fixes.push_back(std::make_unique<CRampbugFix>());
+    fixes.push_back(std::make_unique<CWaterJumpFix>());
     return fixes;
 }
 

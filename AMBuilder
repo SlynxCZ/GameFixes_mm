@@ -22,6 +22,8 @@ for sdk_target in MMSPlugin.sdk_targets:
     os.path.join('src', 'fixes', 'demo_record.cpp'),
     os.path.join('src', 'fixes', 'hammer_id.cpp'),
     os.path.join('src', 'fixes', 'input_activator_crash.cpp'),
+    os.path.join('src', 'fixes', 'rampbug.cpp'),
+    os.path.join('src', 'fixes', 'water_jump.cpp'),
     os.path.join('src', 'fixes', 'server_list_players.cpp'),
     os.path.join('src', 'fixes', 'slow_animation.cpp'),
     os.path.join('src', 'fixes', 'steam_ban.cpp'),
