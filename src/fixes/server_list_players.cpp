@@ -81,8 +81,6 @@ void CServerListPlayersFix::Unload()
 
 KHook::Return<void> CServerListPlayersFix::CSource2Server_GameServerSteamAPIActivated(ISource2Server* pThis)
 {
-    GF_TRACE(3);
-
     m_bSteamAPIReady = m_steamAPI.Init();
 
     return { KHook::Action::Ignore };
@@ -90,8 +88,6 @@ KHook::Return<void> CServerListPlayersFix::CSource2Server_GameServerSteamAPIActi
 
 KHook::Return<void> CServerListPlayersFix::CSource2Server_GameServerSteamAPIDeactivated(ISource2Server* pThis)
 {
-    GF_TRACE(3);
-
     m_steamAPI.Clear();
     m_bSteamAPIReady = false;
 
@@ -100,8 +96,6 @@ KHook::Return<void> CServerListPlayersFix::CSource2Server_GameServerSteamAPIDeac
 
 void CServerListPlayersFix::UpdatePlayers()
 {
-    GF_TRACE(3);
-
     if (!m_bSteamAPIReady)
         return;
 

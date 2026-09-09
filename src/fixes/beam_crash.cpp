@@ -75,8 +75,6 @@ void CBeamCrashFix::Unload()
 
 KHook::Return<void> CBeamCrashFix::CBeam_SetBeamOrigin(CBeam* pThis, const Vector* pVecPosition)
 {
-    GF_TRACE(3);
-
     // Game code still works for parented beams; without a parent it would loop forever, so it's skipped and finished in Post.
     if (pThis->m_CBodyComponent()->m_pSceneNode()->m_pParent())
         return { KHook::Action::Ignore };
@@ -86,8 +84,6 @@ KHook::Return<void> CBeamCrashFix::CBeam_SetBeamOrigin(CBeam* pThis, const Vecto
 
 KHook::Return<void> CBeamCrashFix::CBeam_SetBeamOriginPost(CBeam* pThis, const Vector* pVecPosition)
 {
-    GF_TRACE(3);
-
     pThis->m_CBodyComponent()->m_pSceneNode()->m_vecAbsOrigin() = *pVecPosition;
 
     return { KHook::Action::Ignore };
@@ -95,8 +91,6 @@ KHook::Return<void> CBeamCrashFix::CBeam_SetBeamOriginPost(CBeam* pThis, const V
 
 KHook::Return<void> CBeamCrashFix::CBeam_SetBeamEndPos(CBeam* pThis, const Vector* pVecPosition)
 {
-    GF_TRACE(3);
-
     // Same as CBeam_SetBeamOrigin.
     if (pThis->m_CBodyComponent()->m_pSceneNode()->m_pParent())
         return { KHook::Action::Ignore };
@@ -106,8 +100,6 @@ KHook::Return<void> CBeamCrashFix::CBeam_SetBeamEndPos(CBeam* pThis, const Vecto
 
 KHook::Return<void> CBeamCrashFix::CBeam_SetBeamEndPosPost(CBeam* pThis, const Vector* pVecPosition)
 {
-    GF_TRACE(3);
-
     pThis->m_vecEndPos() = *reinterpret_cast<const VectorWS*>(pVecPosition);
 
     return { KHook::Action::Ignore };

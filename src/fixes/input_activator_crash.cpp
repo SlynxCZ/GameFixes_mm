@@ -61,8 +61,6 @@ void CInputActivatorCrashFix::Unload()
 
 KHook::Return<void> CInputActivatorCrashFix::CBaseFilter_InputTestActivator(CBaseFilter* pThis, InputData_t* pInput)
 {
-    GF_TRACE(3);
-
     if (!pInput || !pInput->pActivator)
         return { KHook::Action::Supersede };
 

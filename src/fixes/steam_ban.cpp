@@ -93,7 +93,8 @@ bool CSteamBanFix::Load(const FixModules& modules, char* error, size_t maxlen)
         return false;
     }
 
-    m_hCheckSteamBan->Configure(pCheckSteamBan.GetPtr());
+    // TODO: later change to pCheckSteamBan.GetPtr() after KHook fix
+    m_hCheckSteamBan->Configure(pCheckSteamBan.RCast<void (*)()>());
 
     Log("hooked GameSystem_Think_CheckSteamBan (%p), ban map at %p, %zu whitelisted account(s), clear after pass %s", pCheckSteamBan.GetPtr(), m_pBanMap, m_whitelist.size(), m_bClearAfterPass ? "on" : "off");
     return true;
@@ -108,8 +109,6 @@ void CSteamBanFix::Unload()
 
 KHook::Return<void> CSteamBanFix::GameSystem_Think_CheckSteamBan()
 {
-    GF_TRACE(3);
-
     if (!m_pBanMap || m_pBanMap->Count() <= 0)
         return { KHook::Action::Ignore };
 
@@ -134,23 +133,15 @@ KHook::Return<void> CSteamBanFix::GameSystem_Think_CheckSteamBan()
     for (int i : toRemove)
         m_pBanMap->RemoveAt(i);
 
-    if (!toRemove.empty())
-        LogDebug("%zu entr%s stripped before the pass (%zu whitelisted, cooldown drop %s)", toRemove.size(), toRemove.size() == 1 ? "y" : "ies", m_whitelist.size(), bDropCooldowns ? "on" : "off");
-
     return { KHook::Action::Ignore };
 }
 
 KHook::Return<void> CSteamBanFix::GameSystem_Think_CheckSteamBanPost()
 {
-    GF_TRACE(3);
-
     // Whoever the pass wanted kicked has been kicked by now; the rest of the map
     // is stale and must not survive to the next frame. (Shared by @aiolos1045.)
     if (m_bClearAfterPass && m_pBanMap && m_pBanMap->Count() > 0)
-    {
-        LogDebug("clearing %d entr%s left after the pass", m_pBanMap->Count(), m_pBanMap->Count() == 1 ? "y" : "ies");
         m_pBanMap->RemoveAll();
-    }
 
     return { KHook::Action::Ignore };
 }

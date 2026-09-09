@@ -54,8 +54,6 @@ void CSvCheatsFix::Unload()
 
 void CSvCheatsFix::OnConVarChanged(ConVarRefAbstract* pConVar, CSplitScreenSlot nSlot, const char* pszNewValue, const char* pszOldValue, void* pUnknown)
 {
-    GF_TRACE(3);
-
     if (!s_pInstance || !pConVar || V_strcmp(pConVar->GetName(), "sv_cheats") != 0)
         return;
 
@@ -65,8 +63,6 @@ void CSvCheatsFix::OnConVarChanged(ConVarRefAbstract* pConVar, CSplitScreenSlot 
 
 void CSvCheatsFix::OnSvCheatsDisabled()
 {
-    GF_TRACE(3);
-
     CGameEntitySystem* pEntitySystem = GameEntitySystem();
     CGlobalVars* pGlobals = g_pEngineServer->GetServerGlobals();
     if (!pEntitySystem || !pGlobals)

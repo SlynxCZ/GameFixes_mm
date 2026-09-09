@@ -41,38 +41,3 @@ void CFix::Log(const char* pszFormat, ...) const
 
     META_LOG(&g_Plugin, "%s: %s\n", GetName(), szMessage);
 }
-
-void CFix::LogDebug(const char* pszFormat, ...) const
-{
-    if (!gfdebug::g_bEnabled)
-        return;
-
-    char szMessage[1024];
-
-    va_list args;
-    va_start(args, pszFormat);
-    V_vsnprintf(szMessage, sizeof(szMessage), pszFormat, args);
-    va_end(args);
-
-    META_LOG(&g_Plugin, "[debug] %s: %s\n", GetName(), szMessage);
-}
-
-namespace gfdebug
-{
-    bool g_bEnabled = false;
-
-    void Log(const char* pszFormat, ...)
-    {
-        if (!g_bEnabled)
-            return;
-
-        char szMessage[1024];
-
-        va_list args;
-        va_start(args, pszFormat);
-        V_vsnprintf(szMessage, sizeof(szMessage), pszFormat, args);
-        va_end(args);
-
-        META_LOG(&g_Plugin, "[debug] %s\n", szMessage);
-    }
-}
