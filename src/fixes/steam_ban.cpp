@@ -30,6 +30,7 @@
 #include "dynlibutils/module.hpp"
 
 #include <steam/steamclientpublic.h>
+#include <tier1/convar.h>
 #include <tier1/KeyValues.h>
 
 #include <cstdio>
@@ -39,12 +40,14 @@
 using namespace DynLibUtils;
 
 CSteamBanFix::CSteamBanFix() :
-    KHOOK_NEW(m_hThink, WIN_LINUX(51u, 52u), this, &CSteamBanFix::CCSGameRules_Think, &CSteamBanFix::CCSGameRules_ThinkPost)
+    KHOOK_NEW(m_hCheckSteamBan, this, &CSteamBanFix::GameSystem_Think_CheckSteamBan, &CSteamBanFix::GameSystem_Think_CheckSteamBanPost)
 {
 }
 
 void CSteamBanFix::ReadConfig(KeyValues* pConfig)
 {
+    m_bClearAfterPass = pConfig->GetBool("clear_after_pass", true);
+
     KeyValues* pWhitelist = pConfig->FindKey("whitelist");
     if (!pWhitelist)
         return;
@@ -66,6 +69,9 @@ void CSteamBanFix::ReadConfig(KeyValues* pConfig)
 
 bool CSteamBanFix::Load(const FixModules& modules, char* error, size_t maxlen)
 {
+    // After https://github.com/Source2ZE/CS2Fixes/commit/c82d21ae36588520391b301ed02bfb851dff18e1,
+    // plus the whitelist.
+
     // lea reg, [rip + sm_mapGcBanInformation] inside CCSGameRules; the map
     // is the rip-relative operand.
     // Location to CUtlMap unk that is referenced on Windows by function with "Notification about user penalty: %u/%u (%u sec)\n" string
@@ -79,56 +85,72 @@ bool CSteamBanFix::Load(const FixModules& modules, char* error, size_t maxlen)
 
     m_pBanMap = pMapRef.ResolveRelativeAddress(3, 7).RCast<decltype(m_pBanMap)>();
 
-    // The pass itself is non-virtual; its caller Think is a vtable slot, so a Pre/Post pair on the class vtable brackets it without a detour.
-    CMemory pVTable = modules.server.GetVirtualTableByName("CCSGameRules");
+    // void GameSystem_Think_CheckSteamBan()
+    CMemory pCheckSteamBan = modules.server.FindPattern(ParseStringPattern(WIN_LINUX("41 54 48 81 EC ? ? ? ? BA", "55 48 8D 3D ? ? ? ? BE ? ? ? ? 48 89 E5 41 57 41 56 41 55 41 54 53 48 83 EC")));
+    if (!pCheckSteamBan)
+    {
+        std::snprintf(error, maxlen, "GameSystem_Think_CheckSteamBan not found");
+        return false;
+    }
 
-    m_VTable.m_pVTFs = pVTable.RCast<void**>();
-    LogDebug("Think is vtable slot %u, which currently points to %p", WIN_LINUX(51u, 52u), m_VTable.m_pVTFs[WIN_LINUX(51u, 52u)]);
-    m_hThink->AddGlobal(AsHookTarget<CCSGameRules>(m_VTable));
+    m_hCheckSteamBan->Configure(pCheckSteamBan.GetPtr());
 
-    Log("hooked CCSGameRules::Think on vtable %p, %zu whitelisted account(s)", pVTable.GetPtr(), m_whitelist.size());
+    Log("hooked GameSystem_Think_CheckSteamBan (%p), ban map at %p, %zu whitelisted account(s), clear after pass %s", pCheckSteamBan.GetPtr(), m_pBanMap, m_whitelist.size(), m_bClearAfterPass ? "on" : "off");
     return true;
 }
 
 void CSteamBanFix::Unload()
 {
-    if (m_VTable.m_pVTFs)
-        m_hThink->RemoveGlobal(AsHookTarget<CCSGameRules>(m_VTable));
-
-    delete m_hThink;
-    m_hThink = nullptr;
-    m_VTable.m_pVTFs = nullptr;
+    delete m_hCheckSteamBan;
+    m_hCheckSteamBan = nullptr;
     m_pBanMap = nullptr;
 }
 
-KHook::Return<void> CSteamBanFix::CCSGameRules_Think(CCSGameRules* pThis)
+KHook::Return<void> CSteamBanFix::GameSystem_Think_CheckSteamBan()
 {
     GF_TRACE(3);
 
-    if (!m_pBanMap || m_whitelist.empty() || m_pBanMap->Count() <= 0)
+    if (!m_pBanMap || m_pBanMap->Count() <= 0)
         return { KHook::Action::Ignore };
+
+    // Below sv_kick_players_with_cooldown 2 the pass still acts on competitive
+    // cooldowns (reasons 20, 22 and 23); those entries go the same way as the
+    // whitelisted accounts, before the pass gets to see them.
+    static ConVarRefAbstract sv_kick_players_with_cooldown("sv_kick_players_with_cooldown");
+    const bool bDropCooldowns = sv_kick_players_with_cooldown.IsValidRef() && sv_kick_players_with_cooldown.GetInt() < 2;
 
     // Collect first, remove after -- mutating the tree mid-walk isn't safe.
     std::vector<int> toRemove;
     FOR_EACH_MAP(*m_pBanMap, i)
     {
+        const uint32 uReason = m_pBanMap->Element(i).m_uiReason;
+
         if (m_whitelist.contains(m_pBanMap->Key(i)))
+            toRemove.push_back(i);
+        else if (bDropCooldowns && (uReason == 20 || uReason == 22 || uReason == 23))
             toRemove.push_back(i);
     }
 
     for (int i : toRemove)
         m_pBanMap->RemoveAt(i);
 
+    if (!toRemove.empty())
+        LogDebug("%zu entr%s stripped before the pass (%zu whitelisted, cooldown drop %s)", toRemove.size(), toRemove.size() == 1 ? "y" : "ies", m_whitelist.size(), bDropCooldowns ? "on" : "off");
+
     return { KHook::Action::Ignore };
 }
 
-KHook::Return<void> CSteamBanFix::CCSGameRules_ThinkPost(CCSGameRules* pThis)
+KHook::Return<void> CSteamBanFix::GameSystem_Think_CheckSteamBanPost()
 {
     GF_TRACE(3);
 
-    // Whoever the pass wanted kicked has been kicked by now; the rest of the map is stale and must not survive to the next frame. (Shared by @aiolos1045.)
-    if (m_pBanMap && m_pBanMap->Count() > 0)
+    // Whoever the pass wanted kicked has been kicked by now; the rest of the map
+    // is stale and must not survive to the next frame. (Shared by @aiolos1045.)
+    if (m_bClearAfterPass && m_pBanMap && m_pBanMap->Count() > 0)
+    {
+        LogDebug("clearing %d entr%s left after the pass", m_pBanMap->Count(), m_pBanMap->Count() == 1 ? "y" : "ies");
         m_pBanMap->RemoveAll();
+    }
 
     return { KHook::Action::Ignore };
 }

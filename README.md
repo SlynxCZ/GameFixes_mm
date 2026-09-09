@@ -13,7 +13,7 @@
 | `hammer_id` | `SetSchemaHammerUniqueId` skips `m_sUniqueHammerID` behind a `jnz`; patched to `jmp` so every entity gets its id. |
 | `slow_animation` | `curtime` is a 32-bit float and loses precision after a day or two on one map (sluggish animations, movement, lag compensation). While the server is empty at a check, the map is reloaded; the remaining `mp_timelimit` is carried over. `reload_interval` sets the check period in seconds. |
 | `workshop_voice` | Clients key voice playback off the `xuid` in `svc_VoiceData`; on workshop maps it doesn't identify the speaker uniquely, streams collide and players stop hearing each other. Every speaker gets a distinct xuid per listener, rewritten in place in `CServerSideClient::SendNetMessage` (once per recipient). Seeds reset on every map change. |
-| `steam_ban` | The engine's per-frame GC ban / competitive cooldown kick pass. Accounts in `whitelist` (SteamID64s) are stripped out before it runs, and whatever it leaves behind is cleared so a stale entry can't hit the next player to join. |
+| `steam_ban` | The engine's per-frame GC ban / competitive cooldown kick pass (`GameSystem_Think_CheckSteamBan`, hooked by signature). Accounts in `whitelist` (SteamID64s) are stripped out before it runs, so are competitive cooldowns while `sv_kick_players_with_cooldown` is below 2, and with `clear_after_pass` whatever it leaves behind is cleared so a stale entry can't hit the next player to join. |
 | `team_limit` | On every `round_start`, `CCSGameRules`' spawnable/max T and CT counts are raised to maxplayers, so a join is never refused because a team is "full". |
 | `input_activator_crash` | `CBaseFilter::InputTestActivator` dereferences the input's activator unchecked; a `TestActivator` fired with none crashes the server. Those calls are dropped. |
 | `sv_cheats` | Turning `sv_cheats` off leaves anyone in noclip flying. Every such pawn goes back to `MOVETYPE_WALK` the moment the cvar flips to 0. |
@@ -35,6 +35,7 @@ A fix that fails to find what it needs (a signature, a vtable) is logged and lef
 "steam_ban"
 {
 	"enable"	"1"
+	"clear_after_pass"	"1"
 	"whitelist"
 	{
 		"Slynx"	"76561198000000000"
