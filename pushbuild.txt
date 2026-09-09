@@ -1,2 +1,2 @@
 Change this file on main and the CI cuts the next tag and release.
-Thanks for khook
+Thanks for khookv1.0.0: the package carries configs/ now.

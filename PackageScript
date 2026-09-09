@@ -128,6 +128,7 @@ sdk_name = list(packages.keys())[0]
 for task in MMSPlugin.binaries:
 
   packages[sdk_name].addBinary(task.binary)
+  packages[sdk_name].addFolder("configs")
 
   if task.debug:
     pdb_list.append(task.debug)
