@@ -71,6 +71,8 @@ bool CDemoRecordFix::IsTvEnabled() const
 
 void CDemoRecordFix::OnStartupServer(const GameSessionConfiguration_t& config, const char* pszMapName)
 {
+    GF_TRACE(3);
+
     if (!IsTvEnabled())
         return;
 
@@ -81,6 +83,8 @@ void CDemoRecordFix::OnStartupServer(const GameSessionConfiguration_t& config, c
 
 KHook::Return<void> CDemoRecordFix::CServerSideClient_Disconnect(CServerSideClientBase* pThis, ENetworkDisconnectionReason reason, const char* pszInternalReason)
 {
+    GF_TRACE(3);
+
     if (pThis->IsHLTV() && IsTvEnabled())
     {
         Log("GOTV is enabled, blocking the GOTV client's disconnect");

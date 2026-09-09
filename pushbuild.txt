@@ -1,2 +1,4 @@
 Change this file on main and the CI cuts the next tag and release.
-Thanks for khookv1.0.0: the package carries configs/ now.
+Thanks for khook
+v1.0.1: the package carries configs/ now.
+v1.0.2: debug logging for chasing the startup crash.

@@ -62,6 +62,8 @@ void CSlowAnimationFix::Unload()
 
 void CSlowAnimationFix::OnStartupServer(const GameSessionConfiguration_t& config, const char* pszMapName)
 {
+    GF_TRACE(3);
+
     V_snprintf(m_szMap, sizeof(m_szMap), "%s", (pszMapName && pszMapName[0]) ? pszMapName : "unknown");
     m_dMapStartTime = g_dUniversalTime;
 
@@ -87,6 +89,8 @@ void CSlowAnimationFix::OnStartupServer(const GameSessionConfiguration_t& config
 
 void CSlowAnimationFix::OnReloadTimer()
 {
+    GF_TRACE(3);
+
     if (!m_szMap[0])
     {
         Log("reload skipped: no map snapshot yet (loaded mid-map, waiting for the next StartupServer)");

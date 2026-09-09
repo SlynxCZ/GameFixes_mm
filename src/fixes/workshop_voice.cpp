@@ -66,12 +66,16 @@ void CWorkshopVoiceFix::Unload()
 
 void CWorkshopVoiceFix::OnStartupServer(const GameSessionConfiguration_t& config, const char* pszMapName)
 {
+    GF_TRACE(3);
+
     std::memset(m_PlayerSeeds, 0, sizeof(m_PlayerSeeds));
     m_bLoggedFirstRewrite = false;
 }
 
 KHook::Return<bool> CWorkshopVoiceFix::CServerSideClient_SendNetMessage(CServerSideClientBase* pThis, const CNetMessage* pData, NetChannelBufType_t bufType)
 {
+    GF_TRACE(3);
+
     if (!pData)
         return { KHook::Action::Ignore, true };
 

@@ -28,6 +28,32 @@
 
 #include <cstddef>
 
+// "debug" "1" at the top of game_fixes.ini: every plugin step, every hook install
+// with the slot or address it lands on, and the first calls of every handler
+// go to the log -- enough to see which hook a crash follows.
+namespace gfdebug
+{
+    extern bool g_bEnabled;
+
+    // "[debug] <message>" through metamod's logger; nothing when debug is off.
+    void Log(const char* pszFormat, ...);
+}
+
+// The first N calls of the enclosing function, when debug logging is on.
+#define GF_TRACE(N) \
+    do \
+    { \
+        if (gfdebug::g_bEnabled) \
+        { \
+            static unsigned s_nCalls = 0; \
+            if (s_nCalls < (N)) \
+            { \
+                ++s_nCalls; \
+                gfdebug::Log("%s: call %u", __func__, s_nCalls); \
+            } \
+        } \
+    } while (0)
+
 class KeyValues;
 class GameSessionConfiguration_t;
 class IGameEventManager2;
@@ -73,4 +99,7 @@ public:
 protected:
     // "<name>: <message>" through metamod's logger.
     void Log(const char* pszFormat, ...) const;
+
+    // Same, prefixed [debug] and only when debug logging is on.
+    void LogDebug(const char* pszFormat, ...) const;
 };

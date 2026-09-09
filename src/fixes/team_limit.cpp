@@ -47,12 +47,16 @@ void CTeamLimitFix::Unload()
 
 void CTeamLimitFix::OnStartupServer(const GameSessionConfiguration_t& config, const char* pszMapName)
 {
+    GF_TRACE(3);
+
     // New map, new cs_gamerules.
     m_pGameRules = nullptr;
 }
 
 void CTeamLimitFix::OnGameEventManagerReady(IGameEventManager2* pManager)
 {
+    GF_TRACE(3);
+
     m_pGameEventManager = pManager;
     m_pGameEventManager->AddListener(this, "round_start", true);
 
@@ -61,6 +65,8 @@ void CTeamLimitFix::OnGameEventManagerReady(IGameEventManager2* pManager)
 
 void CTeamLimitFix::FireGameEvent(IGameEvent* pEvent)
 {
+    GF_TRACE(3);
+
     CCSGameRules* pGameRules = GetGameRules();
     CGlobalVars* pGlobals = g_pEngineServer->GetServerGlobals();
     if (!pGameRules || !pGlobals)

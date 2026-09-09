@@ -83,6 +83,7 @@ bool CSteamBanFix::Load(const FixModules& modules, char* error, size_t maxlen)
     CMemory pVTable = modules.server.GetVirtualTableByName("CCSGameRules");
 
     m_VTable.m_pVTFs = pVTable.RCast<void**>();
+    LogDebug("Think is vtable slot %u, which currently points to %p", WIN_LINUX(51u, 52u), m_VTable.m_pVTFs[WIN_LINUX(51u, 52u)]);
     m_hThink->AddGlobal(AsHookTarget<CCSGameRules>(m_VTable));
 
     Log("hooked CCSGameRules::Think on vtable %p, %zu whitelisted account(s)", pVTable.GetPtr(), m_whitelist.size());
@@ -102,6 +103,8 @@ void CSteamBanFix::Unload()
 
 KHook::Return<void> CSteamBanFix::CCSGameRules_Think(CCSGameRules* pThis)
 {
+    GF_TRACE(3);
+
     if (!m_pBanMap || m_whitelist.empty() || m_pBanMap->Count() <= 0)
         return { KHook::Action::Ignore };
 
@@ -121,6 +124,8 @@ KHook::Return<void> CSteamBanFix::CCSGameRules_Think(CCSGameRules* pThis)
 
 KHook::Return<void> CSteamBanFix::CCSGameRules_ThinkPost(CCSGameRules* pThis)
 {
+    GF_TRACE(3);
+
     // Whoever the pass wanted kicked has been kicked by now; the rest of the map is stale and must not survive to the next frame. (Shared by @aiolos1045.)
     if (m_pBanMap && m_pBanMap->Count() > 0)
         m_pBanMap->RemoveAll();

@@ -87,15 +87,22 @@ bool Plugin::Load(PluginId id, ISmmAPI* ismm, char* error, size_t maxlen, bool l
     if (!LoadFixes(modules, error, maxlen))
         return false;
 
+    gfdebug::Log("server module %p, engine module %p; fixes loaded, installing the plugin hooks", libserver.GetBase().GetPtr(), libengine.GetBase().GetPtr());
+
     scheduler::Init();
 
     m_hGameFrame->Add(g_pSource2Server);
+    gfdebug::Log("hooked ISource2Server::GameFrame on %p", g_pSource2Server);
     m_hStartupServer->Add(g_pNetworkServerService);
+    gfdebug::Log("hooked INetworkServerService::StartupServer on %p", g_pNetworkServerService);
 
     m_GameEventManagerVTable.m_pVTFs = libserver.GetVirtualTableByName("CGameEventManager").RCast<void**>();
+    gfdebug::Log("CGameEventManager vtable %p", m_GameEventManagerVTable.m_pVTFs);
     m_hLoadEventsFromFile->AddGlobal(AsHookTarget<IGameEventManager2>(m_GameEventManagerVTable));
+    gfdebug::Log("hooked IGameEventManager2::LoadEventsFromFile on that vtable");
 
     g_SMAPI->AddListener(this, this);
+    gfdebug::Log("Load() done");
 
     return true;
 }
@@ -127,32 +134,51 @@ bool Plugin::Unload(char* error, size_t maxlen)
 
 KHook::Return<void> Plugin::CSource2Server_GameFrame(ISource2Server* pThis, bool simulating, bool bFirstTick, bool bLastTick)
 {
+    GF_TRACE(3);
+
     scheduler::Tick(simulating);
 
+    static bool s_bFirstFrame = true;
     for (auto& fix : m_fixes)
+    {
+        if (s_bFirstFrame)
+            gfdebug::Log("first GameFrame -> %s", fix->GetName());
         fix->OnGameFrame(simulating);
+    }
+    s_bFirstFrame = false;
 
     return { KHook::Action::Ignore };
 }
 
 KHook::Return<void> Plugin::INetworkServerService_StartupServer(INetworkServerService* pThis, const GameSessionConfiguration_t& config, ISource2WorldSession* pSession, const char* pszMapName)
 {
+    gfdebug::Log("StartupServer: map %s, %d fix(es) to tell", pszMapName ? pszMapName : "(null)", static_cast<int>(m_fixes.size()));
+
     scheduler::RemoveMapChangeTimers();
 
     for (auto& fix : m_fixes)
+    {
+        gfdebug::Log("StartupServer -> %s", fix->GetName());
         fix->OnStartupServer(config, pszMapName);
+    }
+    gfdebug::Log("StartupServer: done");
 
     return { KHook::Action::Ignore };
 }
 
 KHook::Return<int> Plugin::CGameEventManager_LoadEventsFromFile(IGameEventManager2* pThis, const char* pszFilename, bool bSearchAll)
 {
+    gfdebug::Log("LoadEventsFromFile(%s) on %p", pszFilename ? pszFilename : "(null)", pThis);
+
     if (!m_pGameEventManager)
     {
         m_pGameEventManager = pThis;
 
         for (auto& fix : m_fixes)
+        {
+            gfdebug::Log("event manager ready -> %s", fix->GetName());
             fix->OnGameEventManagerReady(pThis);
+        }
     }
 
     return { KHook::Action::Ignore, 0 };
@@ -189,6 +215,10 @@ bool Plugin::LoadFixes(const FixModules& modules, char* error, size_t maxlen)
         return false;
     }
 
+    gfdebug::g_bEnabled = config->GetBool("debug", false);
+    if (gfdebug::g_bEnabled)
+        META_LOG(this, "debug logging on\n");
+
     for (auto& fix : CreateFixes())
     {
         KeyValues* pBlock = config->FindKey(fix->GetName());
@@ -199,6 +229,7 @@ bool Plugin::LoadFixes(const FixModules& modules, char* error, size_t maxlen)
         }
 
         fix->ReadConfig(pBlock);
+        gfdebug::Log("%s: config read, loading", fix->GetName());
 
         char szError[256] = "";
         if (!fix->Load(modules, szError, sizeof(szError)))
