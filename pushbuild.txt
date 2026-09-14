@@ -4,3 +4,4 @@ v1.0.1: the package carries configs/ now.
 v1.0.2: debug logging for chasing the startup crash.
 v1.0.3: steam_ban by signature, cooldown drop, no debug switch.
 v1.0.4: rampbug and water_jump.
+v1.0.5: voice_flood, against the clc_VoiceData server lagger.
