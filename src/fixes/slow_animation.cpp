@@ -25,6 +25,7 @@
 
 #include "slow_animation.h"
 #include "scheduler.h"
+#include "vprof.hpp"
 
 #include "sdk/CBasePlayerController.h"
 #include "sdk/GameSessionConfiguration.h"
@@ -87,6 +88,8 @@ void CSlowAnimationFix::OnStartupServer(const GameSessionConfiguration_t& config
 
 void CSlowAnimationFix::OnReloadTimer()
 {
+    GF_VPROF("GameFixes::slow_animation::OnReloadTimer");
+
     if (!m_szMap[0])
     {
         Log("reload skipped: no map snapshot yet (loaded mid-map, waiting for the next StartupServer)");

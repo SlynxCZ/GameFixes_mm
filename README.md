@@ -53,12 +53,15 @@ src/
   plugin.*          metamod glue: interfaces, ini, the shared GameFrame/StartupServer hooks
   scheduler.*       timers + next-frame queue, ticked from GameFrame
   utils.hpp         WIN_LINUX and WriteCode, the one code-byte patch (on DynLibUtils)
+  vprof.hpp         GF_VPROF, the profiler scope every hook handler and timer callback opens
   fixes/fix.h       the CFix interface every fix implements
   fixes/<name>.*    one fix per file pair
   sdk/              schema field access and the few SDK classes the fixes touch
 ```
 
 Hooks go through KHook, metamod's own detour library (`third_party/khook` in metamod-source, handed to the plugin by `PLUGIN_SAVEVARS()`), so they share one detour backend with every other plugin. Signature scanning and vtable lookup use `vendor/dynlibutils`.
+
+Every handler shows up in the engine's profiler as `GameFixes::<fix>::<function>`, under the `GameFixes` budget group: `vprof_on`, let it run, `vprof_generate_report`, `vprof_off` (the commands are development-only, so something has to unlock them first).
 
 ## Building
 

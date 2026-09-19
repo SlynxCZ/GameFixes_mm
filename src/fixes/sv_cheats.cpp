@@ -24,6 +24,7 @@
  */
 
 #include "sv_cheats.h"
+#include "vprof.hpp"
 
 #include "sdk/CBasePlayerController.h"
 
@@ -54,6 +55,8 @@ void CSvCheatsFix::Unload()
 
 void CSvCheatsFix::OnConVarChanged(ConVarRefAbstract* pConVar, CSplitScreenSlot nSlot, const char* pszNewValue, const char* pszOldValue, void* pUnknown)
 {
+    GF_VPROF("GameFixes::sv_cheats::OnConVarChanged");
+
     if (!s_pInstance || !pConVar || V_strcmp(pConVar->GetName(), "sv_cheats") != 0)
         return;
 

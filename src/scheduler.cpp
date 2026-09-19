@@ -24,6 +24,7 @@
  */
 
 #include "scheduler.h"
+#include "vprof.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -105,6 +106,8 @@ namespace scheduler
 
     void Tick(bool simulating)
     {
+        GF_VPROF("GameFixes::scheduler::Tick");
+
         std::queue<std::function<void()>> local;
         {
             std::lock_guard lock(s_nextFrameMutex);

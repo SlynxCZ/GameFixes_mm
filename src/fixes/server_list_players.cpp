@@ -26,6 +26,7 @@
 #include "server_list_players.h"
 #include "scheduler.h"
 #include "utils.hpp"
+#include "vprof.hpp"
 
 #include "sdk/CBasePlayerController.h"
 
@@ -81,6 +82,8 @@ void CServerListPlayersFix::Unload()
 
 KHook::Return<void> CServerListPlayersFix::CSource2Server_GameServerSteamAPIActivated(ISource2Server* pThis)
 {
+    GF_VPROF("GameFixes::server_list_players::SteamAPIActivated");
+
     m_bSteamAPIReady = m_steamAPI.Init();
 
     return { KHook::Action::Ignore };
@@ -88,6 +91,8 @@ KHook::Return<void> CServerListPlayersFix::CSource2Server_GameServerSteamAPIActi
 
 KHook::Return<void> CServerListPlayersFix::CSource2Server_GameServerSteamAPIDeactivated(ISource2Server* pThis)
 {
+    GF_VPROF("GameFixes::server_list_players::SteamAPIDeactivated");
+
     m_steamAPI.Clear();
     m_bSteamAPIReady = false;
 
@@ -96,6 +101,8 @@ KHook::Return<void> CServerListPlayersFix::CSource2Server_GameServerSteamAPIDeac
 
 void CServerListPlayersFix::UpdatePlayers()
 {
+    GF_VPROF("GameFixes::server_list_players::UpdatePlayers");
+
     if (!m_bSteamAPIReady)
         return;
 

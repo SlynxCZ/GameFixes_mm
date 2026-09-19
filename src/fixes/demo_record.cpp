@@ -28,6 +28,7 @@
 #include "sdk/GameSessionConfiguration.h"
 
 #include "utils.hpp"
+#include "vprof.hpp"
 
 #include "dynlibutils/module.hpp"
 
@@ -81,6 +82,8 @@ void CDemoRecordFix::OnStartupServer(const GameSessionConfiguration_t& config, c
 
 KHook::Return<void> CDemoRecordFix::CServerSideClient_Disconnect(CServerSideClientBase* pThis, ENetworkDisconnectionReason reason, const char* pszInternalReason)
 {
+    GF_VPROF("GameFixes::demo_record::Disconnect");
+
     if (pThis->IsHLTV() && IsTvEnabled())
     {
         Log("GOTV is enabled, blocking the GOTV client's disconnect");

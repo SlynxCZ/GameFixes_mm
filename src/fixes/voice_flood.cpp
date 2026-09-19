@@ -27,6 +27,7 @@
 
 #include "scheduler.h"
 #include "utils.hpp"
+#include "vprof.hpp"
 
 #include "dynlibutils/module.hpp"
 
@@ -84,6 +85,8 @@ void CVoiceFloodFix::Unload()
 
 KHook::Return<bool> CVoiceFloodFix::CServerSideClient_ProcessVoiceData(CServerSideClientBase* pThis, const CCLCMsg_VoiceData_t& msg)
 {
+    GF_VPROF("GameFixes::voice_flood::ProcessVoiceData");
+
     const int nSlot = pThis->GetPlayerSlot().Get();
     if (nSlot < 0 || nSlot >= ABSOLUTE_PLAYER_LIMIT)
         return { KHook::Action::Ignore, true };

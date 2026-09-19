@@ -26,6 +26,7 @@
 #include "steam_ban.h"
 
 #include "utils.hpp"
+#include "vprof.hpp"
 
 #include "dynlibutils/module.hpp"
 
@@ -109,6 +110,8 @@ void CSteamBanFix::Unload()
 
 KHook::Return<void> CSteamBanFix::GameSystem_Think_CheckSteamBan()
 {
+    GF_VPROF("GameFixes::steam_ban::CheckSteamBan");
+
     if (!m_pBanMap || m_pBanMap->Count() <= 0)
         return { KHook::Action::Ignore };
 
@@ -138,6 +141,8 @@ KHook::Return<void> CSteamBanFix::GameSystem_Think_CheckSteamBan()
 
 KHook::Return<void> CSteamBanFix::GameSystem_Think_CheckSteamBanPost()
 {
+    GF_VPROF("GameFixes::steam_ban::CheckSteamBanPost");
+
     // Whoever the pass wanted kicked has been kicked by now; the rest of the map
     // is stale and must not survive to the next frame. (Shared by @aiolos1045.)
     if (m_bClearAfterPass && m_pBanMap && m_pBanMap->Count() > 0)

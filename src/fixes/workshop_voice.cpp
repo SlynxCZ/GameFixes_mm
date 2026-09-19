@@ -26,6 +26,7 @@
 #include "workshop_voice.h"
 
 #include "utils.hpp"
+#include "vprof.hpp"
 
 #include "dynlibutils/module.hpp"
 
@@ -72,6 +73,8 @@ void CWorkshopVoiceFix::OnStartupServer(const GameSessionConfiguration_t& config
 
 KHook::Return<bool> CWorkshopVoiceFix::CServerSideClient_SendNetMessage(CServerSideClientBase* pThis, const CNetMessage* pData, NetChannelBufType_t bufType)
 {
+    GF_VPROF("GameFixes::workshop_voice::SendNetMessage");
+
     if (!pData)
         return { KHook::Action::Ignore, true };
 

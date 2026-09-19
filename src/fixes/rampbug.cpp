@@ -24,6 +24,7 @@
  */
 
 #include "rampbug.h"
+#include "vprof.hpp"
 
 #include "sdk/CBasePlayerPawn.h"
 #include "sdk/CCSPlayer_MovementServices.h"
@@ -302,6 +303,8 @@ bool CRampbugFix::IsValidMovementTrace(trace_t& trace, const bbox_t& bounds, CTr
 
 KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_ProcessMovement(CCSPlayer_MovementServices* pThis, void* pMove)
 {
+    GF_VPROF("GameFixes::rampbug::ProcessMovement");
+
     CBasePlayerPawn* pPawn = nullptr;
     PlayerState* pState = GetState(pThis, &pPawn);
     if (!pState)
@@ -329,6 +332,8 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_ProcessMovement(CCSP
 
 KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_ProcessMovementPost(CCSPlayer_MovementServices* pThis, void* pMove)
 {
+    GF_VPROF("GameFixes::rampbug::ProcessMovementPost");
+
     CBasePlayerPawn* pPawn = nullptr;
     PlayerState* pState = GetState(pThis, &pPawn);
     if (!pState)
@@ -349,6 +354,8 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_ProcessMovementPost(
 // its edge) cannot hand the game a plane the player never hit.
 KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_TryPlayerMove(CCSPlayer_MovementServices* pThis, CMoveData* pMove, Vector* pFirstDest, trace_t* pFirstTrace, bool* pIsSurfing)
 {
+    GF_VPROF("GameFixes::rampbug::TryPlayerMove");
+
     CBasePlayerPawn* pPawn = nullptr;
     PlayerState* pState = GetState(pThis, &pPawn);
     if (!pState)
@@ -559,6 +566,8 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_TryPlayerMove(CCSPla
 
 KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_TryPlayerMovePost(CCSPlayer_MovementServices* pThis, CMoveData* pMove, Vector* pFirstDest, trace_t* pFirstTrace, bool* pIsSurfing)
 {
+    GF_VPROF("GameFixes::rampbug::TryPlayerMovePost");
+
     CBasePlayerPawn* pPawn = nullptr;
     PlayerState* pState = GetState(pThis, &pPawn);
     if (!pState)
@@ -584,6 +593,8 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_TryPlayerMovePost(CC
 // player is not really on; nudge them onto the last valid plane first.
 KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_CategorizePosition(CCSPlayer_MovementServices* pThis, CMoveData* pMove, bool bStayOnGround)
 {
+    GF_VPROF("GameFixes::rampbug::CategorizePosition");
+
     CBasePlayerPawn* pPawn = nullptr;
     PlayerState* pState = GetState(pThis, &pPawn);
     if (!pState)

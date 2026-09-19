@@ -26,6 +26,7 @@
 #include "plugin.h"
 #include "scheduler.h"
 #include "utils.hpp"
+#include "vprof.hpp"
 
 #include "fixes/fix.h"
 #include "fixes/beam_crash.h"
@@ -130,6 +131,8 @@ bool Plugin::Unload(char* error, size_t maxlen)
 
 KHook::Return<void> Plugin::CSource2Server_GameFrame(ISource2Server* pThis, bool simulating, bool bFirstTick, bool bLastTick)
 {
+    GF_VPROF("GameFixes::GameFrame");
+
     scheduler::Tick(simulating);
 
     for (auto& fix : m_fixes)
@@ -140,6 +143,8 @@ KHook::Return<void> Plugin::CSource2Server_GameFrame(ISource2Server* pThis, bool
 
 KHook::Return<void> Plugin::INetworkServerService_StartupServer(INetworkServerService* pThis, const GameSessionConfiguration_t& config, ISource2WorldSession* pSession, const char* pszMapName)
 {
+    GF_VPROF("GameFixes::StartupServer");
+
     scheduler::RemoveMapChangeTimers();
 
     for (auto& fix : m_fixes)
@@ -150,6 +155,8 @@ KHook::Return<void> Plugin::INetworkServerService_StartupServer(INetworkServerSe
 
 KHook::Return<int> Plugin::CGameEventManager_LoadEventsFromFile(IGameEventManager2* pThis, const char* pszFilename, bool bSearchAll)
 {
+    GF_VPROF("GameFixes::LoadEventsFromFile");
+
     if (!m_pGameEventManager)
     {
         m_pGameEventManager = pThis;

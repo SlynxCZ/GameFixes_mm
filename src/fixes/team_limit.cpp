@@ -24,6 +24,7 @@
  */
 
 #include "team_limit.h"
+#include "vprof.hpp"
 
 #include <eiface.h>
 #include <entitysystem.h>
@@ -61,6 +62,8 @@ void CTeamLimitFix::OnGameEventManagerReady(IGameEventManager2* pManager)
 
 void CTeamLimitFix::FireGameEvent(IGameEvent* pEvent)
 {
+    GF_VPROF("GameFixes::team_limit::FireGameEvent");
+
     CCSGameRules* pGameRules = GetGameRules();
     CGlobalVars* pGlobals = g_pEngineServer->GetServerGlobals();
     if (!pGameRules || !pGlobals)

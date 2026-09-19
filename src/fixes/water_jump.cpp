@@ -24,6 +24,7 @@
  */
 
 #include "water_jump.h"
+#include "vprof.hpp"
 
 #include "sdk/CBasePlayerPawn.h"
 #include "sdk/CCSPlayer_MovementServices.h"
@@ -95,6 +96,8 @@ int CWaterJumpFix::GetSlot(CCSPlayer_MovementServices* pServices)
 
 KHook::Return<void> CWaterJumpFix::CCSPlayer_MovementServices_WaterMove(CCSPlayer_MovementServices* pThis, CMoveData* pMove)
 {
+    GF_VPROF("GameFixes::water_jump::WaterMove");
+
     const int nSlot = GetSlot(pThis);
     if (nSlot >= 0)
         m_bSkipNextCategorize[nSlot] = true;
@@ -104,6 +107,8 @@ KHook::Return<void> CWaterJumpFix::CCSPlayer_MovementServices_WaterMove(CCSPlaye
 
 KHook::Return<void> CWaterJumpFix::CCSPlayer_MovementServices_CategorizePosition(CCSPlayer_MovementServices* pThis, CMoveData* pMove, bool bStayOnGround)
 {
+    GF_VPROF("GameFixes::water_jump::CategorizePosition");
+
     const int nSlot = GetSlot(pThis);
     if (nSlot < 0 || !m_bSkipNextCategorize[nSlot])
         return { KHook::Action::Ignore };

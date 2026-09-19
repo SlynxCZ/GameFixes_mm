@@ -25,6 +25,7 @@
 
 #include "input_activator_crash.h"
 #include "utils.hpp"
+#include "vprof.hpp"
 
 #include "dynlibutils/module.hpp"
 
@@ -61,6 +62,8 @@ void CInputActivatorCrashFix::Unload()
 
 KHook::Return<void> CInputActivatorCrashFix::CBaseFilter_InputTestActivator(CBaseFilter* pThis, InputData_t* pInput)
 {
+    GF_VPROF("GameFixes::input_activator_crash::InputTestActivator");
+
     if (!pInput || !pInput->pActivator)
         return { KHook::Action::Supersede };
 
