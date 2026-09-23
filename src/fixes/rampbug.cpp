@@ -28,6 +28,7 @@
 
 #include "sdk/CBasePlayerPawn.h"
 #include "sdk/CCSPlayer_MovementServices.h"
+#include "sdk/INavPhysicsInterface.h"
 
 #include "dynlibutils/module.hpp"
 
@@ -55,7 +56,7 @@ namespace
     struct CTraceFilterPlayerMovementCS : public CTraceFilter
     {
         explicit CTraceFilterPlayerMovementCS(CBasePlayerPawn* pPawn) :
-            CTraceFilter(pPawn, GameEntitySystem()->GetEntityInstance(pPawn->m_hOwnerEntity()), pPawn->m_Collision().m_collisionAttribute().m_nHierarchyId(),
+            CTraceFilter(pPawn, GameEntitySystem()->GetEntityInstance(pPawn->m_hOwnerEntity()), pPawn->m_pCollision()->m_collisionAttribute().m_nHierarchyId(),
                          pPawn->m_pCollision()->m_collisionAttribute().m_nInteractsWith(), COLLISION_GROUP_PLAYER, true)
         {
             EnableInteractsAsLayer(LAYER_INDEX_CONTENTS_PLAYER);
@@ -105,11 +106,10 @@ CRampbugFix::CRampbugFix() :
 
 bool CRampbugFix::Load(const FixModules& modules, char* error, size_t maxlen)
 {
-    // void TracePlayerBBox(const Vector& start, const Vector& end, const bbox_t& bounds, CTraceFilter* filter, trace_t& pm)
-    CMemory pTracePlayerBBox = modules.server.FindPattern(ParseStringPattern(WIN_LINUX("48 8B C4 4C 89 40 ? 48 89 48 ? 55 53 56 57", "55 48 89 E5 41 57 41 56 49 89 D6 41 55 49 89 CD 41 54 53 48 89 F3")));
-    if (!pTracePlayerBBox)
+    CMemory pNavPhysicsVTable = modules.server.GetVirtualTableByName("CNavPhysicsInterface");
+    if (!pNavPhysicsVTable)
     {
-        std::snprintf(error, maxlen, "TracePlayerBBox not found");
+        std::snprintf(error, maxlen, "CNavPhysicsInterface vtable not found");
         return false;
     }
 
@@ -137,13 +137,13 @@ bool CRampbugFix::Load(const FixModules& modules, char* error, size_t maxlen)
         return false;
     }
 
-    m_pfnTracePlayerBBox = pTracePlayerBBox.RCast<decltype(m_pfnTracePlayerBBox)>();
+    m_pNavPhysicsVTable = pNavPhysicsVTable.GetPtr();
 
     m_hProcessMovement->Configure(pProcessMovement.GetPtr());
     m_hTryPlayerMove->Configure(pTryPlayerMove.GetPtr());
     m_hCategorizePosition->Configure(pCategorizePosition.GetPtr());
 
-    Log("hooked ProcessMovement (%p), TryPlayerMove (%p) and CategorizePosition (%p); TracePlayerBBox at %p", pProcessMovement.GetPtr(), pTryPlayerMove.GetPtr(), pCategorizePosition.GetPtr(), pTracePlayerBBox.GetPtr());
+    Log("hooked ProcessMovement (%p), TryPlayerMove (%p) and CategorizePosition (%p); CNavPhysicsInterface vtable at %p", pProcessMovement.GetPtr(), pTryPlayerMove.GetPtr(), pCategorizePosition.GetPtr(), m_pNavPhysicsVTable);
     return true;
 }
 
@@ -155,7 +155,15 @@ void CRampbugFix::Unload()
     m_hProcessMovement = nullptr;
     m_hTryPlayerMove = nullptr;
     m_hCategorizePosition = nullptr;
-    m_pfnTracePlayerBBox = nullptr;
+    m_pNavPhysicsVTable = nullptr;
+}
+
+void CRampbugFix::TracePlayerBBox(const Vector& start, const Vector& end, const bbox_t& bounds, CTraceFilter* pFilter, trace_t& pm)
+{
+    // The interface has no state of its own: a pointer to its vtable pointer
+    // stands in for the object.
+    auto* pNavPhysics = reinterpret_cast<INavPhysicsInterface*>(&m_pNavPhysicsVTable);
+    pNavPhysics->Nav_TraceShape(Ray_t(bounds.mins, bounds.maxs), start, end, pFilter, &pm);
 }
 
 void CRampbugFix::OnStartupServer(const GameSessionConfiguration_t& config, const char* pszMapName)
@@ -246,7 +254,7 @@ void CRampbugFix::ApplySlopeFix(PlayerState& state, CBasePlayerPawn* pPawn)
     ground.z -= 2.0f;
     trace_t trace;
 
-    m_pfnTracePlayerBBox(state.pMoveData->m_vecAbsOrigin, ground, bounds, &filter, trace);
+    TracePlayerBBox(state.pMoveData->m_vecAbsOrigin, ground, bounds, &filter, trace);
 
     if (trace.m_bStartInSolid || trace.m_flFraction == 1.0f || trace.m_vHitNormal.z < 0.7f || trace.m_vHitNormal.z >= 1.0f)
         return;
@@ -288,13 +296,13 @@ bool CRampbugFix::IsValidMovementTrace(trace_t& trace, const bbox_t& bounds, CTr
 
     // An unswept trace and a backward one, to be sure.
     trace_t stuck;
-    m_pfnTracePlayerBBox(trace.m_vEndPos, trace.m_vEndPos, bounds, pFilter, stuck);
+    TracePlayerBBox(trace.m_vEndPos, trace.m_vEndPos, bounds, pFilter, stuck);
     if (stuck.m_bStartInSolid || stuck.m_flFraction < 1.0f - FLT_EPSILON)
         return false;
 
     // Since the Call to Arms update a trace can hit in one direction only, so
     // the backward fraction is not checked.
-    m_pfnTracePlayerBBox(trace.m_vEndPos, trace.m_vStartPos, bounds, pFilter, stuck);
+    TracePlayerBBox(trace.m_vEndPos, trace.m_vStartPos, bounds, pFilter, stuck);
     if (stuck.m_bStartInSolid)
         return false;
 
@@ -406,7 +414,7 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_TryPlayerMove(CCSPla
         }
         else
         {
-            m_pfnTracePlayerBBox(start, end, bounds, &filter, pm);
+            TracePlayerBBox(start, end, bounds, &filter, pm);
             if (end == start)
                 continue;
 
@@ -438,7 +446,7 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_TryPlayerMove(CCSPla
                                     continue;
 
                                 trace_t test;
-                                m_pfnTracePlayerBBox(start + offsetDirection * RAMP_PIERCE_DISTANCE, start, bounds, &filter, test);
+                                TracePlayerBBox(start + offsetDirection * RAMP_PIERCE_DISTANCE, start, bounds, &filter, test);
                                 if (!IsValidMovementTrace(test, bounds, &filter))
                                     continue;
                             }
@@ -448,7 +456,7 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_TryPlayerMove(CCSPla
                             bool hitNewPlane = false;
                             for (ratio = 0.25f; ratio <= 1.0f; ratio += 0.25f)
                             {
-                                m_pfnTracePlayerBBox(start + offsetDirection * RAMP_PIERCE_DISTANCE * ratio, end + offsetDirection * RAMP_PIERCE_DISTANCE * ratio, bounds, &filter, pierce);
+                                TracePlayerBBox(start + offsetDirection * RAMP_PIERCE_DISTANCE * ratio, end + offsetDirection * RAMP_PIERCE_DISTANCE * ratio, bounds, &filter, pierce);
                                 if (!IsValidMovementTrace(pierce, bounds, &filter))
                                     continue;
 
@@ -464,7 +472,7 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_TryPlayerMove(CCSPla
                             {
                                 // Back to the original end point, for its normal.
                                 trace_t test;
-                                m_pfnTracePlayerBBox(pierce.m_vEndPos, end, bounds, &filter, test);
+                                TracePlayerBBox(pierce.m_vEndPos, end, bounds, &filter, test);
                                 pm = pierce;
                                 pm.m_vStartPos = start;
                                 pm.m_flFraction = clamp((pierce.m_vEndPos - pierce.m_vStartPos).Length() / (end - start).Length(), 0.0f, 1.0f);
@@ -624,7 +632,7 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_CategorizePosition(C
     groundOrigin = origin;
     groundOrigin.z -= 2.0f;
 
-    m_pfnTracePlayerBBox(origin, groundOrigin, bounds, &filter, trace);
+    TracePlayerBBox(origin, groundOrigin, bounds, &filter, trace);
 
     if (trace.m_flFraction == 1.0f)
         return { KHook::Action::Ignore };
@@ -635,7 +643,7 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_CategorizePosition(C
         origin += state.vecLastValidPlane * 0.0625f;
         groundOrigin = origin;
         groundOrigin.z -= 2.0f;
-        m_pfnTracePlayerBBox(origin, groundOrigin, bounds, &filter, trace);
+        TracePlayerBBox(origin, groundOrigin, bounds, &filter, trace);
 
         if (trace.m_bStartInSolid)
             return { KHook::Action::Ignore };

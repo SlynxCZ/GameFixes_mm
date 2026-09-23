@@ -40,7 +40,6 @@ public:
     SCHEMA_FIELD(MoveType_t, CBaseEntity, m_nActualMoveType);
     SCHEMA_FIELD(Vector, CBaseEntity, m_vecAbsVelocity);
     SCHEMA_FIELD(CCollisionProperty*, CBaseEntity, m_pCollision);
-    SCHEMA_FIELD(CCollisionProperty, CBaseEntity, m_Collision);
     SCHEMA_FIELD(CEntityHandle, CBaseEntity, m_hOwnerEntity);
     SCHEMA_FIELD(CEntityHandle, CBaseEntity, m_hGroundEntity);
 };

@@ -103,8 +103,10 @@ private:
     void ApplySlopeFix(PlayerState& state, CBasePlayerPawn* pPawn);
     bool IsValidMovementTrace(trace_t& trace, const bbox_t& bounds, CTraceFilter* pFilter);
 
-    // void TracePlayerBBox(const Vector& start, const Vector& end, const bbox_t& bounds, CTraceFilter* filter, trace_t& pm)
-    void (*m_pfnTracePlayerBBox)(const Vector&, const Vector&, const bbox_t&, CTraceFilter*, trace_t&) = nullptr;
+    // The engine's own TracePlayerBBox is gone; the player box is traced
+    // through CNavPhysicsInterface::Nav_TraceShape, as cs2kz does.
+    void TracePlayerBBox(const Vector& start, const Vector& end, const bbox_t& bounds, CTraceFilter* pFilter, trace_t& pm);
+    void* m_pNavPhysicsVTable = nullptr;
 
     PlayerState m_states[64];
 };
