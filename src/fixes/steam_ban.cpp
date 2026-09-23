@@ -87,7 +87,7 @@ bool CSteamBanFix::Load(const FixModules& modules, char* error, size_t maxlen)
     m_pBanMap = pMapRef.ResolveRelativeAddress(3, 7).RCast<decltype(m_pBanMap)>();
 
     // void GameSystem_Think_CheckSteamBan()
-    CMemory pCheckSteamBan = modules.server.FindPattern(ParseStringPattern(WIN_LINUX("41 54 48 81 EC ? ? ? ? BA", "55 48 8D 3D ? ? ? ? BE ? ? ? ? 48 89 E5 41 57 41 56 41 55 41 54 53 48 83 EC")));
+    CMemory pCheckSteamBan = modules.server.FindPattern(ParseStringPattern(WIN_LINUX("41 54 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 44 8B 60 58", "55 48 89 E5 41 57 41 56 41 55 41 54 53 48 83 EC ? 48 8B 05 ? ? ? ? 44 8B 68 ? 45 85 ED 0F 8E ? ? ? ? 8B 15")));
     if (!pCheckSteamBan)
     {
         std::snprintf(error, maxlen, "GameSystem_Think_CheckSteamBan not found");

@@ -29,10 +29,13 @@
 #pragma once
 #endif
 
+// CSVCMsg_GameSessionConfiguration as protobuf 3.21 lays it out; maxPlayers is
+// its max_clients field. The 2026-09-23 update added a repeated field and a
+// float to the message, which moved max_clients from 0x64 to 0x7C.
 class GameSessionConfiguration_t
 {
 public:
-    char pad[0x64];
+    char pad[0x7C];
     int maxPlayers;
 };
 

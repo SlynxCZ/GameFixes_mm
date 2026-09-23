@@ -40,8 +40,9 @@ CInputActivatorCrashFix::CInputActivatorCrashFix() :
 
 bool CInputActivatorCrashFix::Load(const FixModules& modules, char* error, size_t maxlen)
 {
-    // void CBaseFilter::InputTestActivator(InputData_t* pInput) -- only ever referenced right next to the string "TestActivator".
-    CMemory pInputTestActivator = modules.server.FindPattern(ParseStringPattern(WIN_LINUX("48 89 5C 24 ? 57 48 83 EC ? 4C 8B 02", "55 48 89 E5 41 54 49 89 F4 53 48 89 FB 48 83 EC ? 48 8B 07 48 8B 16")));
+    // void CBaseFilter::InputTestActivator(InputData_t* pInput) -- since the 2026-09-23 update the datamap no longer
+    // points at it; the "TestActivator" input dispatcher calls it directly with { activator, caller }.
+    CMemory pInputTestActivator = modules.server.FindPattern(ParseStringPattern(WIN_LINUX("48 89 5C 24 ? 57 48 83 EC ? 4C 8B 02", "55 48 89 E5 41 55 41 54 49 89 F4 53 48 89 FB 48 81 EC ? ? ? ? 48 8B 07 48 8B 16")));
     if (!pInputTestActivator)
     {
         std::snprintf(error, maxlen, "CBaseFilter::InputTestActivator not found");
