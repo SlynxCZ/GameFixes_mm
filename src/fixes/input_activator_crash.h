@@ -47,7 +47,16 @@ public:
     void Unload() override;
 
 public: // Hooks
+#ifdef _WIN32
+    // MSVC inlines the input handler into the CBaseFilter_API::TestActivator
+    // dispatcher, so on Windows the dispatcher itself is hooked. pContext + 16
+    // holds the input's activator/caller source.
+    KHook::Return<int64_t> CBaseFilter_API_TestActivator(void* pBinding, void* a2, void* a3, void* pContext, void* pArgs);
+
+    KHook::Function<int64_t, void*, void*, void*, void*, void*>* m_hInputTestActivator = nullptr;
+#else
     KHook::Return<void> CBaseFilter_InputTestActivator(CBaseFilter* pThis, InputData_t* pInput);
 
     KHook::Member<CBaseFilter, void, InputData_t*>* m_hInputTestActivator = nullptr;
+#endif
 };
