@@ -29,7 +29,9 @@
 // svc_VoiceData for each listener, so the server spends the frame building
 // voice nobody can play. CServerSideClient::ProcessVoiceData is where the
 // engine takes the message; malformed ones and anything past a per-second
-// budget are swallowed there, and the sender is kicked.
+// budget are swallowed there. The sender's voice is then dropped for a
+// cooldown, and a sender caught again and again is kicked: a real client
+// that bursts once (a hitch flushing queued voice) only loses a few seconds.
 #pragma once
 
 #include "fix.h"
@@ -85,10 +87,13 @@ private:
         int m_nUserId = -1;
         double m_flWindowStart = 0.0;
         int m_nInWindow = 0;
-        bool m_bCaught = false;
+        // Voice is dropped until then; 0 when not caught.
+        double m_flCaughtUntil = 0.0;
+        int m_nStrikes = 0;
+        double m_flLastStrike = 0.0;
     };
 
-    void Refuse(CServerSideClientBase* pClient, ClientState& state, const char* pszReason);
+    void Refuse(CServerSideClientBase* pClient, ClientState& state, const char* pszReason, double flNow);
 
     DynLibUtils::VirtualTable m_VTable;
 
@@ -96,5 +101,9 @@ private:
 
     int m_nMaxPackets = 64;
     int m_nMaxPerSecond = 128;
+    // Seconds a caught client's voice is dropped; 0 until they disconnect.
+    float m_flCooldown = 5.0f;
     bool m_bKick = true;
+    // Times caught, each within STRIKE_MEMORY of the last, before a kick.
+    int m_nKickStrikes = 3;
 };

@@ -38,6 +38,9 @@
 
 using namespace DynLibUtils;
 
+// A strike this long after the previous one starts the count again.
+static constexpr double STRIKE_MEMORY = 60.0;
+
 CVoiceFloodFix::CVoiceFloodFix() :
     KHOOK_NEW(m_hProcessVoiceData, &CServerSideClientBase::ProcessVoiceData, this, &CVoiceFloodFix::CServerSideClient_ProcessVoiceData, nullptr)
 {
@@ -47,7 +50,9 @@ void CVoiceFloodFix::ReadConfig(KeyValues* pConfig)
 {
     m_nMaxPackets = pConfig->GetInt("max_packets", 64);
     m_nMaxPerSecond = pConfig->GetInt("max_per_second", 128);
+    m_flCooldown = pConfig->GetFloat("cooldown", 5.0f);
     m_bKick = pConfig->GetBool("kick", true);
+    m_nKickStrikes = pConfig->GetInt("kick_strikes", 3);
 
     // A client talking sends one Opus packet per 20 ms, so 50 a second; below
     // these, real voice would start getting cut.
@@ -55,6 +60,10 @@ void CVoiceFloodFix::ReadConfig(KeyValues* pConfig)
         m_nMaxPackets = 16;
     if (m_nMaxPerSecond < 64)
         m_nMaxPerSecond = 64;
+    if (m_flCooldown < 0.0f)
+        m_flCooldown = 0.0f;
+    if (m_nKickStrikes < 1)
+        m_nKickStrikes = 1;
 }
 
 bool CVoiceFloodFix::Load(const FixModules& modules, char* error, size_t maxlen)
@@ -69,7 +78,7 @@ bool CVoiceFloodFix::Load(const FixModules& modules, char* error, size_t maxlen)
     m_VTable.m_pVTFs = pVTable.RCast<void**>();
     m_hProcessVoiceData->AddGlobal(AsHookTarget<CServerSideClientBase>(m_VTable));
 
-    Log("hooked CServerSideClient::ProcessVoiceData on vtable %p (max_packets %d, max_per_second %d, kick %d)", pVTable.GetPtr(), m_nMaxPackets, m_nMaxPerSecond, m_bKick);
+    Log("hooked CServerSideClient::ProcessVoiceData on vtable %p (max_packets %d, max_per_second %d, cooldown %.1f, kick %d after %d strike(s))", pVTable.GetPtr(), m_nMaxPackets, m_nMaxPerSecond, m_flCooldown, m_bKick, m_nKickStrikes);
     return true;
 }
 
@@ -100,11 +109,25 @@ KHook::Return<bool> CVoiceFloodFix::CServerSideClient_ProcessVoiceData(CServerSi
         state.m_nUserId = nUserId;
     }
 
+    const double flNow = Plat_FloatTime();
+
+    // Caught: everything is swallowed, well-formed messages it mixes in too,
+    // until the cooldown runs out.
+    if (state.m_flCaughtUntil != 0.0)
+    {
+        if (m_flCooldown == 0.0f || flNow < state.m_flCaughtUntil)
+            return { KHook::Action::Supersede, true };
+
+        // Out of it with a fresh budget, not the window the burst filled.
+        state.m_flCaughtUntil = 0.0;
+        state.m_flWindowStart = flNow;
+        state.m_nInWindow = 0;
+    }
+
     const char* pszReason = CheckVoiceData(msg, m_nMaxPackets);
 
     if (!pszReason)
     {
-        const double flNow = Plat_FloatTime();
         if (flNow - state.m_flWindowStart >= 1.0)
         {
             state.m_flWindowStart = flNow;
@@ -115,29 +138,41 @@ KHook::Return<bool> CVoiceFloodFix::CServerSideClient_ProcessVoiceData(CServerSi
             pszReason = "voice messages over max_per_second";
     }
 
-    // Once caught, nothing more from this client is let through, even the
-    // well-formed messages it mixes in, until it is gone.
-    if (!pszReason && !state.m_bCaught)
+    if (!pszReason)
         return { KHook::Action::Ignore, true };
 
-    if (pszReason && !state.m_bCaught)
-        Refuse(pThis, state, pszReason);
+    Refuse(pThis, state, pszReason, flNow);
 
     // Swallowed, not rejected: returning false is what the engine counts
     // against a client as malformed traffic, on its own terms.
     return { KHook::Action::Supersede, true };
 }
 
-void CVoiceFloodFix::Refuse(CServerSideClientBase* pClient, ClientState& state, const char* pszReason)
+void CVoiceFloodFix::Refuse(CServerSideClientBase* pClient, ClientState& state, const char* pszReason, double flNow)
 {
-    state.m_bCaught = true;
+    // Nonzero even with a cooldown of 0, which never runs out.
+    state.m_flCaughtUntil = flNow + (m_flCooldown > 0.0f ? m_flCooldown : 1.0);
+
+    if (flNow - state.m_flLastStrike > STRIKE_MEMORY)
+        state.m_nStrikes = 0;
+    state.m_nStrikes++;
+    state.m_flLastStrike = flNow;
 
     const int nSlot = pClient->GetPlayerSlot().Get();
     const int nUserId = state.m_nUserId;
+    const bool bKick = m_bKick && state.m_nStrikes >= m_nKickStrikes;
 
-    Log("%s (slot %d, %llu): %s%s", pClient->GetClientName(), nSlot, pClient->GetClientSteamID().ConvertToUint64(), pszReason, m_bKick ? ", kicking" : ", dropping their voice");
+    char szAction[64];
+    if (bKick)
+        std::snprintf(szAction, sizeof(szAction), "kicking");
+    else if (m_flCooldown > 0.0f)
+        std::snprintf(szAction, sizeof(szAction), "dropping their voice for %.1f s", m_flCooldown);
+    else
+        std::snprintf(szAction, sizeof(szAction), "dropping their voice");
 
-    if (!m_bKick)
+    Log("%s (slot %d, %llu): %s (%d this second), strike %d/%d, %s", pClient->GetClientName(), nSlot, pClient->GetClientSteamID().ConvertToUint64(), pszReason, state.m_nInWindow, state.m_nStrikes, m_nKickStrikes, szAction);
+
+    if (!bKick)
         return;
 
     // Not from inside the client's own message processing: next frame, and
