@@ -94,8 +94,7 @@ bool CSteamBanFix::Load(const FixModules& modules, char* error, size_t maxlen)
         return false;
     }
 
-    // TODO: later change to pCheckSteamBan.GetPtr() after KHook fix
-    m_hCheckSteamBan->Configure(pCheckSteamBan.RCast<void (*)()>());
+    m_hCheckSteamBan->Configure(pCheckSteamBan.GetPtr());
 
     Log("hooked GameSystem_Think_CheckSteamBan (%p), ban map at %p, %zu whitelisted account(s), clear after pass %s", pCheckSteamBan.GetPtr(), m_pBanMap, m_whitelist.size(), m_bClearAfterPass ? "on" : "off");
     return true;
