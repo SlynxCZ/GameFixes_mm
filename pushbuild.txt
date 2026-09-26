@@ -9,3 +9,4 @@ v1.0.6: vprof scopes on every hook handler and timer callback.
 v1.0.7: 2026-09-23 engine sync (steam_ban, input_activator_crash incl. the inlined Windows dispatcher, water_jump, demo_record max_clients 0x7C) and rampbug working again through CNavPhysicsInterface.
 v1.0.8: rebuild of v1.0.7 against the hl2sdk update that landed right after it (IFileSystem slots, entity IO queue event).
 v1.0.9: rebuild against the completed hl2sdk update (CEntityInstance and INetworkGameServer vtables, datamap/variant).
+v1.0.10: voice_flood cooldown and kick after repeated strikes (cooldown, kick_strikes), steam_ban hook configured by address.
