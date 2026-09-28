@@ -23,7 +23,7 @@
  * Project: GameFixes_mm
  */
 
-// CBaseFilter::InputTestActivator dereferences the input's activator without
+// CBaseFilter::InputTestActivator / CEntityIdentity::AcceptInput dereferences the input's activator without
 // checking it, so a TestActivator input fired with no activator (a map's
 // output wired straight to a filter, for one) takes the server down. Calls
 // without an activator are dropped before the game sees them.
@@ -31,8 +31,6 @@
 
 #include "fix.h"
 #include "plugin.h"
-
-#include "sdk/InputData.h"
 
 class CBaseFilter;
 
@@ -47,16 +45,7 @@ public:
     void Unload() override;
 
 public: // Hooks
-#ifdef _WIN32
-    // MSVC inlines the input handler into the CBaseFilter_API::TestActivator
-    // dispatcher, so on Windows the dispatcher itself is hooked. pContext + 16
-    // holds the input's activator/caller source.
-    KHook::Return<int64_t> CBaseFilter_API_TestActivator(void* pBinding, void* a2, void* a3, void* pContext, void* pArgs);
+    KHook::Return<bool> CEntityIdentity_AcceptInput(CEntityIdentity* pThis, CUtlSymbolLarge* pInputName, CEntityInstance* pActivator, CEntityInstance* pCaller, variant_t* pValue, void* a6, void* a7);
 
-    KHook::Function<int64_t, void*, void*, void*, void*, void*>* m_hInputTestActivator = nullptr;
-#else
-    KHook::Return<void> CBaseFilter_InputTestActivator(CBaseFilter* pThis, InputData_t* pInput);
-
-    KHook::Member<CBaseFilter, void, InputData_t*>* m_hInputTestActivator = nullptr;
-#endif
+    KHook::Member<CEntityIdentity, bool, CUtlSymbolLarge*, CEntityInstance*, CEntityInstance*, variant_t*, void*, void*>* m_hAcceptInput = nullptr;
 };
