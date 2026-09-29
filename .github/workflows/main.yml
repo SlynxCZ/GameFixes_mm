@@ -211,6 +211,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Create the tag
         # Only on the pushbuild.txt path -- a tag push already has one. After the
@@ -263,3 +265,9 @@ jobs:
           file_glob: true
           overwrite: true
           release_name: "${{ needs.version.outputs.tag }}"
+
+      - name: Release notes (GitHub release + Discord)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_WEBHOOK: ${{ secrets.RELEASE_WEBHOOK }}
+        run: python3 .github/scripts/release_notes.py "${{ needs.version.outputs.tag }}" --project "GameFixes" --update-release
