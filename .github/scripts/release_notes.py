@@ -43,6 +43,17 @@ def gh(path, method='GET', body=None):
         return json.loads(r.read() or b'null')
 
 
+def gh_optional(path, default=None):
+    """A lookup the notes can do without: author, pull request, first
+    contribution. The pull-request endpoints need `pull-requests: read`, which
+    a release job with only `contents: write` does not have (403)."""
+    try:
+        return gh(path)
+    except Exception as e:  # noqa: BLE001
+        print('note: %s: %s' % (path, e), file=sys.stderr)
+        return default
+
+
 def previous_tag(tag):
     try:
         return git('describe', '--tags', '--abbrev=0', '--match', 'v*', tag + '^')
@@ -61,9 +72,9 @@ def build_notes(repo, tag, prev, project):
         if SKIP.match(subject) or subject.strip().lower() == 'pushbuild':
             continue
         subject = subject.strip()
-        info = gh('/repos/%s/commits/%s' % (repo, sha))
+        info = gh_optional('/repos/%s/commits/%s' % (repo, sha), {}) or {}
         login = (info.get('author') or {}).get('login')
-        pulls = gh('/repos/%s/commits/%s/pulls' % (repo, sha)) or []
+        pulls = gh_optional('/repos/%s/commits/%s/pulls' % (repo, sha), []) or []
         pr = next((p for p in pulls if p.get('merged_at') and p['base']['ref'] == 'main'), None)
 
         text = '* ' + subject
@@ -78,7 +89,7 @@ def build_notes(repo, tag, prev, project):
         if login and login not in seen_authors:
             seen_authors.add(login)
             if prev and pr:
-                before = gh('/repos/%s/commits?author=%s&sha=%s&per_page=1' % (repo, login, prev)) or []
+                before = gh_optional('/repos/%s/commits?author=%s&sha=%s&per_page=1' % (repo, login, prev), [None]) or []
                 if not before:
                     firsts.append('* [@%s](https://github.com/%s) made their first contribution in [#%d](%s)'
                                   % (login, login, pr['number'], pr['html_url']))
@@ -137,4 +148,10 @@ def main():
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    # The archives are uploaded before this runs: notes that fail must not mark
+    # the release job failed.
+    try:
+        sys.exit(main())
+    except Exception as e:  # noqa: BLE001
+        print('::warning::release notes failed: %s' % e)
+        sys.exit(0)
