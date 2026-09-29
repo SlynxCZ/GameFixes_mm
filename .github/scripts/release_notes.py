@@ -106,14 +106,20 @@ def build_notes(repo, tag, prev, project):
 def discord_text(project, repo, tag, notes):
     release_url = 'https://github.com/%s/releases/tag/%s' % (repo, tag)
     head = 'A new release of %s has been tagged [%s](<%s>)\n\n' % (project, tag, release_url)
-    text = head + notes
-    if len(text) > 2000:  # Discord's message limit
-        more = '\n\n… and more — [full release notes](<%s>)' % release_url
-        cut = notes[:2000 - len(head) - len(more)]
-        cut = cut[:cut.rfind('\n')] if '\n' in cut else cut
-        text = head + cut + more
-    # Keep embeds out of the post: <link> suppresses the preview.
-    return re.sub(r'\]\((https://[^)>]+)\)', r'](<\1>)', text)
+    # Keep embeds out of the post: <link> suppresses the preview. Done before
+    # measuring -- it adds two characters per link.
+    body = re.sub(r'\]\((https://[^)>]+)\)', r'](<\1>)', notes)
+    if len(head) + len(body) <= 2000:  # Discord's message limit
+        return head + body
+    more = '\n… and more — [full release notes](<%s>)' % release_url
+    kept = []
+    size = len(head) + len(more)
+    for line in body.split('\n'):
+        if size + len(line) + 1 > 2000:
+            break
+        kept.append(line)
+        size += len(line) + 1
+    return head + '\n'.join(kept) + more
 
 
 def main():
