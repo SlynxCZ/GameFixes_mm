@@ -40,7 +40,6 @@
 #include "fixes/steam_ban.h"
 #include "fixes/sv_cheats.h"
 #include "fixes/team_limit.h"
-#include "fixes/voice_flood.h"
 #include "fixes/workshop_voice.h"
 
 #include "sdk/GameSessionConfiguration.h"
@@ -183,7 +182,6 @@ std::vector<std::unique_ptr<CFix>> Plugin::CreateFixes()
     fixes.push_back(std::make_unique<CServerListPlayersFix>());
     fixes.push_back(std::make_unique<CRampbugFix>());
     fixes.push_back(std::make_unique<CWaterJumpFix>());
-    fixes.push_back(std::make_unique<CVoiceFloodFix>());
     return fixes;
 }
 
