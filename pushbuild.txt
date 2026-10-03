@@ -11,3 +11,4 @@ v1.0.8: rebuild of v1.0.7 against the hl2sdk update that landed right after it (
 v1.0.9: rebuild against the completed hl2sdk update (CEntityInstance and INetworkGameServer vtables, datamap/variant).
 v1.0.10: voice_flood cooldown and kick after repeated strikes (cooldown, kick_strikes), steam_ban hook configured by address.
 v1.0.11: voice_flood removed -- far too many false positives on regular players; workshop_voice stays.
+Author string is a u8 literal and MSVC builds with /utf-8, so the name is UTF-8 on every compiler.
