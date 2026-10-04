@@ -43,9 +43,12 @@ list(REMOVE_DUPLICATES PROTO_PATHS)
 list(TRANSFORM PROTO_OUTPUT PREPEND ${CMAKE_CURRENT_BINARY_DIR}/protobufcompiler/)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/protobufcompiler)
 
+# The game folder of SteamDatabase/Protobufs has its own
+# google/protobuf/descriptor.proto (Valve's, with options such as boxed_type
+# built in); it has to come before protobuf's stock one on the include path.
 add_custom_command(
         OUTPUT ${PROTO_OUTPUT}
-        COMMAND "${PROTOC_EXECUTABLE}" -I ${SOURCESDK_DIR}/thirdparty/protobuf-3.21.8/src --proto_path=${CSGO_PROTO_DIR} ${PROTO_PATHS} --cpp_out=${CMAKE_CURRENT_BINARY_DIR}/protobufcompiler ${PROTO_INPUT}
+        COMMAND "${PROTOC_EXECUTABLE}" --proto_path=${CSGO_PROTO_DIR} -I ${SOURCESDK_DIR}/thirdparty/protobuf-3.21.8/src ${PROTO_PATHS} --cpp_out=${CMAKE_CURRENT_BINARY_DIR}/protobufcompiler ${PROTO_INPUT}
         COMMENT "Generating protobuf file"
 )
 

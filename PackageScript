@@ -102,6 +102,11 @@ class SDKPackage:
 
         rel = os.path.relpath(src, folder_path)
 
+        # CMake writes its copy of the plugin's .vdf here (git-ignored); the
+        # package already gets the one generated above.
+        if os.path.dirname(rel) == os.path.join('addons', 'metamod') and f.endswith('.vdf'):
+          continue
+
         dst = os.path.join(result_path, rel)
 
         builder.AddFolder(os.path.dirname(dst))
