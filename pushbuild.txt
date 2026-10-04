@@ -13,3 +13,4 @@ v1.0.10: voice_flood cooldown and kick after repeated strikes (cooldown, kick_st
 v1.0.11: voice_flood removed -- far too many false positives on regular players; workshop_voice stays.
 Author string is a u8 literal and MSVC builds with /utf-8, so the name is UTF-8 on every compiler.
 Builds against hl2sdk 5fc47fd (global convar change callback signature); author string as u8.
+Protobufs: the game folder comes first on protoc's include path, for SteamDatabase/Protobufs' per-game descriptor.proto (bd8f82d, needed by its dumps since 2026-10-04).
