@@ -53,7 +53,7 @@ void CSvCheatsFix::Unload()
     s_pInstance = nullptr;
 }
 
-void CSvCheatsFix::OnConVarChanged(ConVarRefAbstract* pConVar, CSplitScreenSlot nSlot, const char* pszNewValue, const char* pszOldValue, void* pUnknown)
+void CSvCheatsFix::OnConVarChanged(ConVarRefAbstract* pConVar, CSplitScreenSlot nSlot, const char* pszNewValue, const char* pszOldValue, ConVarUserInfoSet_t* pUserInfo)
 {
     GF_VPROF("GameFixes::sv_cheats::OnConVarChanged");
 
