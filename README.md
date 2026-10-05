@@ -19,6 +19,7 @@
 | `sv_cheats` | Turning `sv_cheats` off leaves anyone in noclip flying. Every such pawn goes back to `MOVETYPE_WALK` the moment the cvar flips to 0. |
 | `rampbug` | Surf ramps: a movement trace that stops short of a ramp or lands on its edge feeds `TryPlayerMove` a plane the player never hit, and they are flung off. The traces are redone from a small offset along the last valid plane and a bad result is put back (CS2KZ's fix, via CS2Fixes-RampbugFix). Lessens rampbugs, does not end them. |
 | `water_jump` | Touching the bottom of a body of water, the `CategorizePosition` after `WaterMove` counts the player as standing on it and a jump out of the water no longer takes. That one call is skipped. |
+| `voice_flood` | Malformed (`clc_VoiceData` with no audio, a sender other than the client, an unknown format, packets with no data) or oversized voice messages -- over 16 KiB or 64 packets -- are dropped in `CServerSideClient::ProcessVoiceData` before the engine handles them, and every client is held to 192 messages, 256 KiB and 1024 packets per second. Nobody is kicked. |
 | `server_list_players` | Pushes every connected player's SteamID, name and score to the Steam game server API every `update_interval` seconds, so the server browser lists the players. Port of [Source2ZE/ServerListPlayersFix](https://github.com/Source2ZE/ServerListPlayersFix). |
 
 A fix that fails to find what it needs (a signature, a vtable) is logged and left off; the rest of the plugin still loads.
