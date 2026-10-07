@@ -3,13 +3,24 @@ project(game_fixes C CXX ASM)
 
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-foreach(var HL2SDKCS2 MMSOURCE_DEV CSGO_PROTO)
+foreach(var MMSOURCE_DEV CSGO_PROTO)
     if(NOT DEFINED ENV{${var}})
         message(FATAL_ERROR "Environment variable ${var} is not set!")
     endif()
 endforeach()
 
-set(SOURCESDK_DIR $ENV{HL2SDKCS2})
+# s2sdk (alliedmodders/s2sdk, formerly hl2sdk's cs2 branch): the first of
+# these variables that is set wins.
+foreach(var S2SDK_CS2 S2SDKCS2 S2SDK HL2SDK_CS2 HL2SDKCS2)
+    if(DEFINED ENV{${var}} AND NOT "$ENV{${var}}" STREQUAL "")
+        file(TO_CMAKE_PATH "$ENV{${var}}" SOURCESDK_DIR)
+        break()
+    endif()
+endforeach()
+if(NOT SOURCESDK_DIR)
+    message(FATAL_ERROR "s2sdk not found: set S2SDK (or HL2SDKCS2) to your checkout!")
+endif()
+
 set(METAMOD_DIR $ENV{MMSOURCE_DEV})
 set(CSGO_PROTO_DIR $ENV{CSGO_PROTO})
 

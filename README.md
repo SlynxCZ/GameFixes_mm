@@ -65,7 +65,7 @@ Every handler shows up in the engine's profiler as `GameFixes::<fix>::<function>
 
 ## Building
 
-Requires `HL2SDKCS2`, `MMSOURCE_DEV` and `CSGO_PROTO` in the environment (hl2sdk `cs2` branch, metamod-source, SteamDatabase Protobufs `csgo/`).
+Requires `S2SDK` (or `HL2SDKCS2`), `MMSOURCE_DEV` and `CSGO_PROTO` in the environment (alliedmodders/s2sdk `cs2` branch, metamod-source, SteamDatabase Protobufs `csgo/`).
 
 CMake, for local development (CLion):
 

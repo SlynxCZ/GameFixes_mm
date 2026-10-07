@@ -141,22 +141,22 @@ jobs:
         run: |
 
           $SDK = "C:\sdk"
-          $HL2SDK = "$SDK\hl2sdk-cs2"
+          $S2SDK = "$SDK\s2sdk"
           $MMS = "$SDK\metamod-source"
           $PROTO = "$SDK\Protobufs"
 
           if (Test-Path $SDK) { Remove-Item $SDK -Recurse -Force }
           New-Item -ItemType Directory -Path $SDK | Out-Null
 
-          git clone --recursive --branch cs2 --single-branch https://github.com/alliedmodders/hl2sdk $HL2SDK
+          git clone --recursive --branch cs2 --single-branch https://github.com/alliedmodders/s2sdk $S2SDK
           git clone --recursive --branch master --single-branch https://github.com/alliedmodders/metamod-source $MMS
           git clone --recursive https://github.com/SteamDatabase/Protobufs $PROTO
 
-          $HL2SDK_UNIX = $HL2SDK.Replace("\", "/")
+          $S2SDK_UNIX = $S2SDK.Replace("\", "/")
           $MMS_UNIX    = $MMS.Replace("\", "/")
           $PROTO_UNIX  = "$($PROTO.Replace('\','/'))/csgo"
 
-          echo "HL2SDKCS2=$HL2SDK_UNIX"  >> $env:GITHUB_ENV
+          echo "S2SDK=$S2SDK_UNIX"      >> $env:GITHUB_ENV
           echo "MMSOURCE_DEV=$MMS_UNIX"  >> $env:GITHUB_ENV
           echo "CSGO_PROTO=$PROTO_UNIX"  >> $env:GITHUB_ENV
 
@@ -186,7 +186,6 @@ jobs:
             --enable-optimize ^
             --sdks cs2 ^
             --mms_path=%MMSOURCE_DEV% ^
-            --hl2sdk-root=%HL2SDKCS2% ^
             --hl2sdk-manifests=%MMSOURCE_DEV%/hl2sdk-manifests
 
           ambuild
