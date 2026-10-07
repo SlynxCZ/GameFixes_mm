@@ -150,7 +150,7 @@ jobs:
 
           git clone --recursive --branch cs2 --single-branch https://github.com/alliedmodders/s2sdk $S2SDK
           git clone --recursive --branch master --single-branch https://github.com/alliedmodders/metamod-source $MMS
-          git clone --recursive https://github.com/SteamDatabase/Protobufs $PROTO
+          git clone --recursive https://github.com/SteamTracking/Protobufs $PROTO
 
           $S2SDK_UNIX = $S2SDK.Replace("\", "/")
           $MMS_UNIX    = $MMS.Replace("\", "/")

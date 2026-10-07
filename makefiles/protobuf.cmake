@@ -43,7 +43,7 @@ list(REMOVE_DUPLICATES PROTO_PATHS)
 list(TRANSFORM PROTO_OUTPUT PREPEND ${CMAKE_CURRENT_BINARY_DIR}/protobufcompiler/)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/protobufcompiler)
 
-# The game folder of SteamDatabase/Protobufs has its own
+# The game folder of SteamTracking/Protobufs has its own
 # google/protobuf/descriptor.proto (Valve's, with options such as boxed_type
 # built in); it has to come before protobuf's stock one on the include path.
 add_custom_command(

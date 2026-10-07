@@ -35,7 +35,7 @@ echo "=== Downloading Metamod-Source ==="
 git clone --recursive --branch master --single-branch https://github.com/alliedmodders/metamod-source.git "$MMSOURCE_DIR"
 
 echo "=== Downloading Protobufs ==="
-git clone --recursive https://github.com/SteamDatabase/Protobufs "$CSGO_PROTO_DIR"
+git clone --recursive https://github.com/SteamTracking/Protobufs "$CSGO_PROTO_DIR"
 
 ### --- Export env vars for CMake ------------------------------------------
 export S2SDK="$S2SDK_DIR"
