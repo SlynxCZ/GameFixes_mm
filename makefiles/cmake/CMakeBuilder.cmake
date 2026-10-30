@@ -32,7 +32,6 @@ list(APPEND SOURCE_FILES
     src/fixes/steam_ban.cpp
     src/fixes/sv_cheats.cpp
     src/fixes/team_limit.cpp
-    src/fixes/workshop_voice.cpp
     src/fixes/voice_flood.cpp
     src/sdk/schemasystem_helper.cpp
 )

@@ -1,6 +1,6 @@
 # GameFixes_mm
 
-**One Metamod:Source plugin for the CS2 server fixes that used to be five separate ones (BeamCrashFix, DemoRecordFix, HammerIdFix, SlowAnimationFix, WorkshopVoiceFix), the GC-ban whitelist that used to live in FUNPLAY Core, and a few more (team limit, input activator crash, sv_cheats noclip, server list players).** Every fix is toggled in `game_fixes.ini`.
+**One Metamod:Source plugin for the CS2 server fixes that used to be four separate ones (BeamCrashFix, DemoRecordFix, HammerIdFix, SlowAnimationFix), the GC-ban whitelist that used to live in FUNPLAY Core, and a few more (team limit, input activator crash, sv_cheats noclip, server list players).** Every fix is toggled in `game_fixes.ini`.
 
 ---
 
@@ -12,7 +12,6 @@
 | `demo_record` | With `tv_enable 1`, the GOTV client is never disconnected and gets a slot on top of the session's maxplayers, so demo recording survives match restarts on the same map. |
 | `hammer_id` | `SetSchemaHammerUniqueId` skips `m_sUniqueHammerID` behind a `jnz`; patched to `jmp` so every entity gets its id. |
 | `slow_animation` | `curtime` is a 32-bit float and loses precision after a day or two on one map (sluggish animations, movement, lag compensation). While the server is empty at a check, the map is reloaded; the remaining `mp_timelimit` is carried over. `reload_interval` sets the check period in seconds. |
-| `workshop_voice` | Clients key voice playback off the `xuid` in `svc_VoiceData`; on workshop maps it doesn't identify the speaker uniquely, streams collide and players stop hearing each other. Every speaker gets a distinct xuid per listener, rewritten in place in `CServerSideClient::SendNetMessage` (once per recipient). Seeds reset on every map change. |
 | `steam_ban` | The engine's per-frame GC ban / competitive cooldown kick pass (`GameSystem_Think_CheckSteamBan`, hooked by signature). Accounts in `whitelist` (SteamID64s) are stripped out before it runs, so are competitive cooldowns while `sv_kick_players_with_cooldown` is below 2, and with `clear_after_pass` whatever it leaves behind is cleared so a stale entry can't hit the next player to join. Other plugins allow accounts at runtime through `IGameFixes` (below); an account nobody allowed yet is held for `hold_seconds` before the pass may kick it. |
 | `team_limit` | `CCSGameRules`' max T/CT counts and enabled spawn point counts are kept at maxplayers every frame, so a join is never refused because a team is "full", also on maps with few spawns. |
 | `input_activator_crash` | `CBaseFilter::InputTestActivator` dereferences the input's activator unchecked; a `TestActivator` fired with none crashes the server. Those calls are dropped. |

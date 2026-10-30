@@ -28,7 +28,6 @@ for sdk_target in MMSPlugin.sdk_targets:
     os.path.join(builder.sourcePath, 'src', 'fixes', 'steam_ban.cpp'),
     os.path.join(builder.sourcePath, 'src', 'fixes', 'sv_cheats.cpp'),
     os.path.join(builder.sourcePath, 'src', 'fixes', 'team_limit.cpp'),
-    os.path.join(builder.sourcePath, 'src', 'fixes', 'workshop_voice.cpp'),
     os.path.join(builder.sourcePath, 'src', 'fixes', 'voice_flood.cpp'),
     os.path.join(builder.sourcePath, 'src', 'impl', 'sdk', 'schemasystem_helper.cpp'),
   ]

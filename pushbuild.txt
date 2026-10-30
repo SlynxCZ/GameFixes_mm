@@ -20,3 +20,4 @@ MSVC build fix: std::max parenthesized against the windows.h macro (the IGameFix
 CS2 1.41.9.2: built against the fixed IVEngineServer2 (new virtual at slot 65), steam_ban ban map signature for Windows, rampbug takes gpGlobals from the engine instead of Metamod.
 New fix abstract_entity (on by default): entities whose class cannot be constructed (weapon_cs_base in old map ports and their game_player_equip) are refused instead of crashing the server at libserver+0x22e6506.
 Unload safety for failed or partial loads (disabled fixes no longer leak hooks, null vtables refused), null-safe hook teardown, NetworkStateChanged slot scan limited to 16 bytes; built against s2sdk cb545fbe.
+workshop_voice removed: Valve fixed voice on workshop maps in the game.
