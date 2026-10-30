@@ -30,7 +30,7 @@ RUN apt update && apt install -y \
 
 RUN git config --system --add safe.directory '*'
 
-COPY docker/docker-entrypoint.sh ./docker-entrypoint.sh
+COPY scripts/docker-entrypoint.sh ./docker-entrypoint.sh
 RUN sed -i 's/\r$//' ./docker-entrypoint.sh && chmod +x ./docker-entrypoint.sh
 
 WORKDIR /app/source
