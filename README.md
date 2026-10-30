@@ -1,5 +1,11 @@
 # GameFixes_mm
 
+> [!IMPORTANT]
+> **Archived.** This Metamod plugin is no longer maintained: it continues on
+> [Source2Mod](https://www.source2mod.net) as [GameFixes_s2m](https://github.com/SlynxCZ/GameFixes_s2m),
+> with the same fixes (and `cstv_bot_quota`) on the core's own hooks, config and gamedata.
+> What is described below still holds for the fixes themselves.
+
 **One Metamod:Source plugin for the CS2 server fixes that used to be four separate ones (BeamCrashFix, DemoRecordFix, HammerIdFix, SlowAnimationFix), the GC-ban whitelist that used to live in FUNPLAY Core, and a few more (team limit, input activator crash, sv_cheats noclip, server list players).** Every fix is toggled in `game_fixes.ini`.
 
 ---
